@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useLocation, useParams, useNavigate } from 'react-router-dom'
+import { FaceMesh } from '@mediapipe/face_mesh'
+import { Camera } from '@mediapipe/camera_utils'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 
-export default function VirtualTryOn({ product, onClose }) {
+export default function VirtualTryOn({ product: propProduct, onClose }) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState('')
@@ -8,15 +13,47 @@ export default function VirtualTryOn({ product, onClose }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
+  const earringRef = useRef(null)
+  const mpCameraRef = useRef(null)
+  const faceMeshRef = useRef(null)
+  const location = useLocation()
+  const params = useParams()
+  const navigate = useNavigate()
+
+  // product may come from prop, location.state, or we can fetch by param id
+  const [localProduct, setLocalProduct] = useState(propProduct || location.state?.product || null)
 
   // Face/body landmarks for positioning jewelry
   const [landmarks, setLandmarks] = useState(null)
 
   useEffect(() => {
-    initializeCamera()
+    // If product is not provided via props/state but an id param is present, fetch it
+    const tryFetchProduct = async () => {
+      if (!localProduct && params?.id) {
+        try {
+          const d = await getDoc(doc(db, 'products', params.id))
+          if (d.exists()) setLocalProduct({ id: d.id, ...d.data() })
+          else setError('Product not found')
+        } catch (err) {
+          console.error('Failed to fetch product:', err)
+          setError('Failed to load product')
+        }
+      }
+    }
+
+    tryFetchProduct().then(() => initializeCamera())
     return () => {
+      // Stop any active media stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
+      }
+      // Stop mediapipe camera if used
+      if (mpCameraRef.current && typeof mpCameraRef.current.stop === 'function') {
+        try { mpCameraRef.current.stop() } catch (e) { /* ignore */ }
+      }
+      // Close faceMesh
+      if (faceMeshRef.current && typeof faceMeshRef.current.close === 'function') {
+        try { faceMeshRef.current.close() } catch (e) { /* ignore */ }
       }
     }
   }, [])
@@ -26,6 +63,7 @@ export default function VirtualTryOn({ product, onClose }) {
       setIsLoading(true)
       
       // Request camera permission
+      // Request camera permission and try to use MediaPipe FaceMesh for better positioning
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user',
@@ -33,15 +71,68 @@ export default function VirtualTryOn({ product, onClose }) {
           height: { ideal: 480 }
         } 
       })
-      
+
       streamRef.current = stream
       setHasPermission(true)
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+      }
+
+  // Try to initialize MediaPipe FaceMesh for earrings placement (only when product is earrings)
+  if (localProduct?.category === 'earrings' && typeof FaceMesh !== 'undefined') {
+        const faceMesh = new FaceMesh({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+        })
+
+        faceMesh.setOptions({
+          maxNumFaces: 1,
+          refineLandmarks: true,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        })
+
+        faceMesh.onResults((results) => {
+          if (results.multiFaceLandmarks && results.multiFaceLandmarks[0] && videoRef.current) {
+            const landmarks = results.multiFaceLandmarks[0]
+            // left ear approx index (MediaPipe uses different indices; 234 is a common left ear landmark)
+            const leftEar = landmarks[234]
+            const video = videoRef.current
+            const earring = earringRef.current
+            if (leftEar && video && earring) {
+              const x = leftEar.x * video.videoWidth
+              const y = leftEar.y * video.videoHeight
+              earring.style.left = `${x - 20}px`
+              earring.style.top = `${y - 20}px`
+            }
+          }
+        })
+
+        faceMeshRef.current = faceMesh
+
+        // Use MediaPipe Camera util to feed frames
+        const mpCamera = new Camera(videoRef.current, {
+          onFrame: async () => {
+            try {
+              await faceMesh.send({ image: videoRef.current })
+            } catch (e) {
+              // ignore send errors
+            }
+          },
+          width: 640,
+          height: 480,
+        })
+
+        mpCameraRef.current = mpCamera
+        mpCamera.start()
+        setIsLoading(false)
+        return
+      }
+
+      // Fallback: simple video stream, keep isLoading false when ready
+      if (videoRef.current) {
         videoRef.current.onloadedmetadata = () => {
           setIsLoading(false)
-          // Initialize face detection here (we'll use a simple overlay for now)
         }
       }
     } catch (err) {
@@ -68,7 +159,7 @@ export default function VirtualTryOn({ product, onClose }) {
 
     // Convert to image and download
     const link = document.createElement('a')
-    link.download = `${product.name}-virtual-try-on.png`
+    link.download = `${(localProduct?.name) || 'virtual-try-on'}-virtual-try-on.png`
     link.href = canvas.toDataURL()
     link.click()
   }
@@ -78,7 +169,7 @@ export default function VirtualTryOn({ product, onClose }) {
     const centerY = height / 2
 
     // Simple positioning based on product category
-    switch (product.category) {
+    switch (localProduct?.category) {
       case 'earrings':
         // Draw earrings on both sides of face
         drawEarring(ctx, centerX - 80, centerY - 20) // Left ear
@@ -182,7 +273,7 @@ export default function VirtualTryOn({ product, onClose }) {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-2xl font-bold">Virtual Try-On</h3>
-            <p className="text-gray-600">Try {product.name} virtually</p>
+                <p className="text-gray-600">Try {localProduct?.name || 'this item'} virtually</p>
           </div>
           <button 
             onClick={onClose}
@@ -216,8 +307,8 @@ export default function VirtualTryOn({ product, onClose }) {
               
               {/* Product Info Overlay */}
               <div className="absolute top-4 right-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg text-sm">
-                <div className="font-medium">{product.name}</div>
-                <div className="text-gray-600 capitalize">{product.category}</div>
+                <div className="font-medium">{localProduct?.name || '—'}</div>
+                <div className="text-gray-600 capitalize">{localProduct?.category || ''}</div>
               </div>
             </div>
 
@@ -243,7 +334,7 @@ export default function VirtualTryOn({ product, onClose }) {
               <h4 className="font-semibold mb-2">How to use Virtual Try-On:</h4>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• Make sure you're in good lighting</li>
-                <li>• {product.category === 'rings' ? 'Hold your hand steady in front of the camera' : 'Keep your face centered in the frame'}</li>
+                <li>• {localProduct?.category === 'rings' ? 'Hold your hand steady in front of the camera' : 'Keep your face centered in the frame'}</li>
                 <li>• Click "Capture Photo" to save your virtual try-on</li>
                 <li>• Move slightly to see different angles</li>
               </ul>
