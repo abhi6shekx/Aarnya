@@ -19,6 +19,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
   const faceMeshRef = useRef(null)
   const initTimeoutRef = useRef(null)
   const retryCountRef = useRef(0)
+  const startedRef = useRef(false)
   const location = useLocation()
   const params = useParams()
   const navigate = useNavigate()
@@ -73,16 +74,20 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
         clearTimeout(initTimeoutRef.current)
         initTimeoutRef.current = null
       }
+      // allow re-initialization if component remounts
+      try { startedRef.current = false } catch (e) {}
     }
   }, [])
 
   // Wait until the video element is actually mounted in the DOM before initializing camera
+  // Run once on mount and start initialization only once (guarded by startedRef)
   useEffect(() => {
     let cancelled = false
 
     const waitForVideo = async () => {
       let retries = 0
-      while (!videoRef.current && retries < 15 && !cancelled) {
+      // wait up to ~5s for the video element to appear
+      while (!videoRef.current && retries < 25 && !cancelled) {
         await new Promise((res) => setTimeout(res, 200))
         retries++
       }
@@ -91,7 +96,12 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
 
       if (videoRef.current) {
         console.log('✅ Video element found, initializing camera...')
-        initializeCamera(localProduct)
+        if (!startedRef.current) {
+          startedRef.current = true
+          initializeCamera(localProduct)
+        } else {
+          console.log('Initialization already started; skipping duplicate init')
+        }
       } else {
         console.error('❌ Still no video element after waiting.')
         setError('Internal error: video element not found after mounting.')
@@ -101,7 +111,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
     waitForVideo()
 
     return () => { cancelled = true }
-  }, [localProduct])
+  }, [])
 
   // Close on Escape key for convenience
   useEffect(() => {
@@ -124,6 +134,8 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
 
   const initializeCamera = async (initialProduct = null) => {
     try {
+      // mark that initialization has started to avoid duplicates
+      startedRef.current = true
       setIsLoading(true)
       setError('')
 
@@ -280,12 +292,15 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
         retryCountRef.current += 1
         console.warn('Camera access denied or unavailable, retrying in 2s... (attempt', retryCountRef.current, 'of', maxRetries, ')')
         setError('Camera access temporarily unavailable — retrying...')
+        // allow re-initialization
+        startedRef.current = false
         setTimeout(() => initializeCamera(initialProduct), 2000)
         return
       }
 
       setError('Camera access denied or unavailable. Please allow camera permissions to try on jewelry.')
       setIsLoading(false)
+      startedRef.current = false
     }
   }
 
