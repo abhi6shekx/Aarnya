@@ -18,6 +18,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
   const mpCameraRef = useRef(null)
   const faceMeshRef = useRef(null)
   const initTimeoutRef = useRef(null)
+  const retryCountRef = useRef(0)
   const location = useLocation()
   const params = useParams()
   const navigate = useNavigate()
@@ -143,6 +144,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       } catch (e) { /* ignore */ }
 
       // Request camera permission and stream
+      console.log('🎥 Requesting camera access...')
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
@@ -154,6 +156,9 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       streamRef.current = stream
       setHasPermission(true)
       console.log('🎥 Camera stream obtained')
+      try { console.log('✅ Camera stream granted:', !!stream && !!stream.active) } catch (e) {}
+      // reset retry counter on success
+      retryCountRef.current = 0
 
       // attach stream to video element
       // remove prior event handlers to avoid duplicate calls
@@ -266,9 +271,19 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
           setIsLoading(false)
           setError('Camera initialization timed out. Please check your camera permissions or press Retry.')
         }
-      }, 8000)
+      }, 12000)
     } catch (err) {
       console.error('❌ Camera init failed:', err)
+      // If this is a transient permission timing issue, retry after a short delay to let Chrome settle
+      const maxRetries = 2
+      if (retryCountRef.current < maxRetries) {
+        retryCountRef.current += 1
+        console.warn('Camera access denied or unavailable, retrying in 2s... (attempt', retryCountRef.current, 'of', maxRetries, ')')
+        setError('Camera access temporarily unavailable — retrying...')
+        setTimeout(() => initializeCamera(initialProduct), 2000)
+        return
+      }
+
       setError('Camera access denied or unavailable. Please allow camera permissions to try on jewelry.')
       setIsLoading(false)
     }
