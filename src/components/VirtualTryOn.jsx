@@ -34,32 +34,24 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       if (!localProduct && routeProductId) {
         try {
           const d = await getDoc(doc(db, 'products', routeProductId))
-          if (d.exists()) return { id: d.id, ...d.data() }
-          else {
+          if (d.exists()) {
+            setLocalProduct({ id: d.id, ...d.data() })
+          } else {
             setError('Product not found')
-            return null
           }
         } catch (err) {
           console.error('Failed to fetch product:', err)
           setError('Failed to load product')
-          return null
         }
       }
-      return null
     }
 
     let mounted = true
 
     ;(async () => {
-      const fetched = await tryFetchProduct()
-      if (fetched && mounted) {
-        setLocalProduct(fetched)
-        // ensure the camera initializes with the freshly fetched product (avoid state race)
-        await initializeCamera(fetched)
-      } else if (mounted) {
-        // initialize with whatever we already have (prop or state)
-        await initializeCamera(localProduct)
-      }
+      if (!mounted) return
+      await tryFetchProduct()
+      // DO NOT call initializeCamera here — wait until the video element is mounted
     })()
 
     return () => {
@@ -82,6 +74,33 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       }
     }
   }, [])
+
+  // Wait until the video element is actually mounted in the DOM before initializing camera
+  useEffect(() => {
+    let cancelled = false
+
+    const waitForVideo = async () => {
+      let retries = 0
+      while (!videoRef.current && retries < 15 && !cancelled) {
+        await new Promise((res) => setTimeout(res, 200))
+        retries++
+      }
+
+      if (cancelled) return
+
+      if (videoRef.current) {
+        console.log('✅ Video element found, initializing camera...')
+        initializeCamera(localProduct)
+      } else {
+        console.error('❌ Still no video element after waiting.')
+        setError('Internal error: video element not found after mounting.')
+      }
+    }
+
+    waitForVideo()
+
+    return () => { cancelled = true }
+  }, [localProduct])
 
   // Close on Escape key for convenience
   useEffect(() => {
@@ -403,91 +422,98 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
           </button>
         </div>
 
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mx-auto mb-4"></div>
-            <p>Initializing camera...</p>
+        <div className="space-y-6">
+          {/* Camera View - always render the video element so refs are available */}
+          <div className="relative bg-gray-900 rounded-xl overflow-hidden">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-96 object-cover transform scale-x-[-1]" // Mirror effect
+            />
+
+            {/* Spinner overlay while initializing */}
+            {isLoading && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mx-auto mb-4"></div>
+                <div>Initializing camera...</div>
+              </div>
+            )}
+
+            {/* Overlay Instructions */}
+            <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded-lg text-sm">
+              📸 Position your {localProduct?.category === 'rings' ? 'hand' : 'face'} in the frame
+            </div>
+
+            {/* Product Info Overlay */}
+            <div className="absolute top-4 right-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg text-sm">
+              <div className="font-medium">{localProduct?.name || '—'}</div>
+              <div className="text-gray-600 capitalize">{localProduct?.category || ''}</div>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Camera View */}
-            <div className="relative bg-gray-900 rounded-xl overflow-hidden">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-96 object-cover transform scale-x-[-1]" // Mirror effect
-              />
-              
-              {/* Overlay Instructions */}
-              <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded-lg text-sm">
-                📸 Position your {localProduct?.category === 'rings' ? 'hand' : 'face'} in the frame
-              </div>
-              
-              {/* Product Info Overlay */}
-              <div className="absolute top-4 right-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg text-sm">
-                <div className="font-medium">{localProduct?.name || '—'}</div>
-                <div className="text-gray-600 capitalize">{localProduct?.category || ''}</div>
-              </div>
-            </div>
 
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={capturePhoto}
-                className="btn-primary flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                </svg>
-                Capture Photo
-              </button>
-              
-              <button onClick={handleClose} className="btn-outline">
-                Close Try-On
-              </button>
-            </div>
+          {/* Controls */}
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={capturePhoto}
+              className="btn-primary flex items-center gap-2"
+              disabled={isLoading}
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
+              Capture Photo
+            </button>
 
-            {/* Retry / ML toggle */}
-            <div className="flex items-center justify-center gap-4 mt-3">
-              <button
-                onClick={() => {
-                  setError('')
-                  setIsLoading(true)
-                  try {
-                    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-                    if (mpCameraRef.current && typeof mpCameraRef.current.stop === 'function') mpCameraRef.current.stop()
-                    if (faceMeshRef.current && typeof faceMeshRef.current.close === 'function') faceMeshRef.current.close()
-                  } catch (e) { /* ignore */ }
-                  streamRef.current = null
-                  mpCameraRef.current = null
-                  faceMeshRef.current = null
+            <button onClick={handleClose} className="btn-outline">
+              Close Try-On
+            </button>
+          </div>
+
+          {/* Retry / ML toggle */}
+          <div className="flex items-center justify-center gap-4 mt-3">
+            <button
+              onClick={() => {
+                setError('')
+                setIsLoading(true)
+                try {
+                  if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+                  if (mpCameraRef.current && typeof mpCameraRef.current.stop === 'function') mpCameraRef.current.stop()
+                  if (faceMeshRef.current && typeof faceMeshRef.current.close === 'function') faceMeshRef.current.close()
+                } catch (e) { /* ignore */ }
+                streamRef.current = null
+                mpCameraRef.current = null
+                faceMeshRef.current = null
+                // ensure we wait for video in case it's not yet mounted
+                (async () => {
+                  let retries = 0
+                  while (!videoRef.current && retries < 15) { await new Promise(r => setTimeout(r, 200)); retries++ }
                   initializeCamera()
-                }}
-                className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50 text-sm"
-              >
-                Retry camera
-              </button>
+                })()
+              }}
+              className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50 text-sm"
+            >
+              Retry camera
+            </button>
 
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={useFaceMesh} onChange={(e)=>setUseFaceMesh(e.target.checked)} className="w-4 h-4" />
-                Use ML placement
-              </label>
-            </div>
-
-            {/* Instructions */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h4 className="font-semibold mb-2">How to use Virtual Try-On:</h4>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Make sure you're in good lighting</li>
-                <li>• {localProduct?.category === 'rings' ? 'Hold your hand steady in front of the camera' : 'Keep your face centered in the frame'}</li>
-                <li>• Click "Capture Photo" to save your virtual try-on</li>
-                <li>• Move slightly to see different angles</li>
-              </ul>
-            </div>
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={useFaceMesh} onChange={(e)=>setUseFaceMesh(e.target.checked)} className="w-4 h-4" />
+              Use ML placement
+            </label>
           </div>
-        )}
+
+          {/* Instructions */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <h4 className="font-semibold mb-2">How to use Virtual Try-On:</h4>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Make sure you're in good lighting</li>
+              <li>• {localProduct?.category === 'rings' ? 'Hold your hand steady in front of the camera' : 'Keep your face centered in the frame'}</li>
+              <li>• Click "Capture Photo" to save your virtual try-on</li>
+              <li>• Move slightly to see different angles</li>
+            </ul>
+          </div>
+        </div>
 
         {/* Hidden canvas for photo capture */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
