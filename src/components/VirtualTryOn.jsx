@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useLocation, useParams, useNavigate } from 'react-router-dom'
-import { FaceMesh } from '@mediapipe/face_mesh'
-import { Camera } from '@mediapipe/camera_utils'
+// We'll dynamically import MediaPipe modules only when needed to avoid bundler/runtime issues
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
@@ -10,18 +9,20 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState('')
   const [isRecording, setIsRecording] = useState(false)
+  // default ML off for better compatibility on low-power devices; user can enable it
+  const [useFaceMesh, setUseFaceMesh] = useState(false)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
   const earringRef = useRef(null)
   const mpCameraRef = useRef(null)
   const faceMeshRef = useRef(null)
+  const initTimeoutRef = useRef(null)
   const location = useLocation()
   const params = useParams()
-  const routeProductId = params.id || params.productId || params.productId?.toString()
   const navigate = useNavigate()
 
-  // product may come from prop, location.state, or we can fetch by param id
+  const routeProductId = params.id || params.productId || (params.productId && params.productId.toString())
   const [localProduct, setLocalProduct] = useState(propProduct || location.state?.product || null)
 
   // Face/body landmarks for positioning jewelry
@@ -33,20 +34,39 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       if (!localProduct && routeProductId) {
         try {
           const d = await getDoc(doc(db, 'products', routeProductId))
-          if (d.exists()) setLocalProduct({ id: d.id, ...d.data() })
-          else setError('Product not found')
+          if (d.exists()) return { id: d.id, ...d.data() }
+          else {
+            setError('Product not found')
+            return null
+          }
         } catch (err) {
           console.error('Failed to fetch product:', err)
           setError('Failed to load product')
+          return null
         }
       }
+      return null
     }
 
-    tryFetchProduct().then(() => initializeCamera())
+    let mounted = true
+
+    ;(async () => {
+      const fetched = await tryFetchProduct()
+      if (fetched && mounted) {
+        setLocalProduct(fetched)
+        // ensure the camera initializes with the freshly fetched product (avoid state race)
+        await initializeCamera(fetched)
+      } else if (mounted) {
+        // initialize with whatever we already have (prop or state)
+        await initializeCamera(localProduct)
+      }
+    })()
+
     return () => {
+      mounted = false
       // Stop any active media stream
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
+        try { streamRef.current.getTracks().forEach(track => track.stop()) } catch (e) { /* ignore */ }
       }
       // Stop mediapipe camera if used
       if (mpCameraRef.current && typeof mpCameraRef.current.stop === 'function') {
@@ -55,6 +75,10 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       // Close faceMesh
       if (faceMeshRef.current && typeof faceMeshRef.current.close === 'function') {
         try { faceMeshRef.current.close() } catch (e) { /* ignore */ }
+      }
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current)
+        initTimeoutRef.current = null
       }
     }
   }, [])
@@ -78,119 +102,132 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
     }
   }
 
-  const initializeCamera = async () => {
+  const initializeCamera = async (initialProduct = null) => {
     try {
       setIsLoading(true)
-      
-      // Request camera permission
-      // Request camera permission and try to use MediaPipe FaceMesh for better positioning
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      setError('')
+
+      const video = videoRef.current
+      if (!video) {
+        console.error('❌ Video element not found in DOM')
+        setError('Internal error: video element not found')
+        setIsLoading(false)
+        return
+      }
+
+      // stop any previous mp camera / faceMesh before creating a new stream
+      try {
+        if (mpCameraRef.current && typeof mpCameraRef.current.stop === 'function') mpCameraRef.current.stop()
+      } catch (e) { /* ignore */ }
+      try {
+        if (faceMeshRef.current && typeof faceMeshRef.current.close === 'function') faceMeshRef.current.close()
+      } catch (e) { /* ignore */ }
+
+      // Request camera permission and stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
           facingMode: 'user',
           width: { ideal: 640 },
           height: { ideal: 480 }
-        } 
+        }
       })
 
       streamRef.current = stream
       setHasPermission(true)
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        // Try to start video playback promptly; some browsers require play() to be called.
+      // attach stream to video element
+      // remove prior event handlers to avoid duplicate calls
+      try { video.onloadedmetadata = null } catch (e) {}
+      try { video.onplaying = null } catch (e) {}
+      video.srcObject = stream
+
+      // Ensure playing/loaded handlers are set — this mirrors the snippet you provided
+      video.onloadedmetadata = async () => {
         try {
-          // play() returns a promise; await so we can know when video is ready
-          // but don't block too long — wrap in try/catch
-          await videoRef.current.play()
+          await video.play()
         } catch (playErr) {
-          // Not fatal: video may still fire loadedmetadata later
           console.warn('video.play() failed or was blocked:', playErr)
         }
-      }
 
-  // Try to initialize MediaPipe FaceMesh for earrings placement (only when product is earrings)
-  if (localProduct?.category === 'earrings' && typeof FaceMesh !== 'undefined') {
-        const faceMesh = new FaceMesh({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-        })
+        // mark ready
+        setIsLoading(false)
 
-        faceMesh.setOptions({
-          maxNumFaces: 1,
-          refineLandmarks: true,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        })
+        // start MediaPipe only when requested and appropriate for product
+        const productToUse = initialProduct || localProduct
+        if (useFaceMesh && productToUse?.category === 'earrings') {
+          try {
+            const mp = await import('@mediapipe/face_mesh')
+            const camUtil = await import('@mediapipe/camera_utils')
+            const FaceMeshClass = mp.FaceMesh
+            const CameraClass = camUtil.Camera
 
-        faceMesh.onResults((results) => {
-          if (results.multiFaceLandmarks && results.multiFaceLandmarks[0] && videoRef.current) {
-            const landmarks = results.multiFaceLandmarks[0]
-            // left ear approx index (MediaPipe uses different indices; 234 is a common left ear landmark)
-            const leftEar = landmarks[234]
-            const video = videoRef.current
-            const earring = earringRef.current
-            if (leftEar && video && earring) {
-              const x = leftEar.x * video.videoWidth
-              const y = leftEar.y * video.videoHeight
-              earring.style.left = `${x - 20}px`
-              earring.style.top = `${y - 20}px`
-            }
-          }
-        })
+            const faceMesh = new FaceMeshClass({
+              locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+            })
 
-        faceMeshRef.current = faceMesh
+            faceMesh.setOptions({
+              maxNumFaces: 1,
+              refineLandmarks: true,
+              minDetectionConfidence: 0.5,
+              minTrackingConfidence: 0.5,
+            })
 
-        // Use MediaPipe Camera util to feed frames
-        const mpCamera = new Camera(videoRef.current, {
-          onFrame: async () => {
+            faceMesh.onResults((results) => {
+              if (results.multiFaceLandmarks && results.multiFaceLandmarks[0] && videoRef.current) {
+                const landmarks = results.multiFaceLandmarks[0]
+                const leftEar = landmarks[234]
+                const videoEl = videoRef.current
+                const earring = earringRef.current
+                if (leftEar && videoEl && earring) {
+                  const x = leftEar.x * videoEl.videoWidth
+                  const y = leftEar.y * videoEl.videoHeight
+                  earring.style.left = `${x - 20}px`
+                  earring.style.top = `${y - 20}px`
+                }
+              }
+            })
+
+            faceMeshRef.current = faceMesh
+
+            const mpCamera = new CameraClass(video, {
+              onFrame: async () => {
+                try {
+                  await faceMesh.send({ image: video })
+                } catch (e) { /* ignore */ }
+              },
+              width: 640,
+              height: 480,
+            })
+
+            mpCameraRef.current = mpCamera
             try {
-              await faceMesh.send({ image: videoRef.current })
-            } catch (e) {
-              // ignore send errors
+              mpCamera.start()
+              console.log('🚀 Starting MediaPipe camera...')
+            } catch (startErr) {
+              console.error('MediaPipe Camera start failed, falling back to video-only mode', startErr)
             }
-          },
-          width: 640,
-          height: 480,
-        })
-
-        mpCameraRef.current = mpCamera
-        try {
-          // start may throw if camera not ready; wrap in try/catch
-          mpCamera.start()
-          // small delay to allow first frame to arrive; if loadedmetadata already fired above, isLoading will be false
-          setTimeout(() => {
-            if (videoRef.current && (videoRef.current.readyState >= 2 || !isLoading)) {
-              setIsLoading(false)
-            } else {
-              // still not ready after short wait — mark not loading so UI can show controls and a helpful message
-              setIsLoading(false)
-            }
-          }, 300)
-          return
-        } catch (startErr) {
-          console.error('MediaPipe Camera start failed, falling back to video-only mode', startErr)
-          // fallback to video-only flow below
+          } catch (impErr) {
+            console.warn('Failed to dynamically load MediaPipe modules, falling back to video-only:', impErr)
+          }
         }
       }
 
-      // Fallback: simple video stream, keep isLoading false when ready
-      if (videoRef.current) {
-        videoRef.current.onloadedmetadata = () => {
-          setIsLoading(false)
-        }
+      video.onplaying = () => {
+        setIsLoading(false)
       }
 
-      // Safety timeout: if camera hasn't initialized within 8s, stop showing the spinner and show a helpful error
-      const timeoutId = setTimeout(() => {
+      // Safety timeout
+      if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current)
+      initTimeoutRef.current = setTimeout(() => {
         if (isLoading) {
           console.warn('Camera initialization timed out')
           setIsLoading(false)
-          setError('Camera initialization timed out. Please check your camera permissions or try reloading the page.')
+          setError('Camera initialization timed out. Please check your camera permissions or press Retry.')
         }
       }, 8000)
-      // clear timeout when leaving or when not loading
-      if (!isLoading) clearTimeout(timeoutId)
     } catch (err) {
-      setError('Camera access denied. Please allow camera permissions to try on jewelry.')
+      console.error('❌ Camera init failed:', err)
+      setError('Camera access denied or unavailable. Please allow camera permissions to try on jewelry.')
       setIsLoading(false)
     }
   }
@@ -362,7 +399,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
               
               {/* Overlay Instructions */}
               <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded-lg text-sm">
-                📸 Position your {product.category === 'rings' ? 'hand' : 'face'} in the frame
+                📸 Position your {localProduct?.category === 'rings' ? 'hand' : 'face'} in the frame
               </div>
               
               {/* Product Info Overlay */}
@@ -387,6 +424,33 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
               <button onClick={handleClose} className="btn-outline">
                 Close Try-On
               </button>
+            </div>
+
+            {/* Retry / ML toggle */}
+            <div className="flex items-center justify-center gap-4 mt-3">
+              <button
+                onClick={() => {
+                  setError('')
+                  setIsLoading(true)
+                  try {
+                    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+                    if (mpCameraRef.current && typeof mpCameraRef.current.stop === 'function') mpCameraRef.current.stop()
+                    if (faceMeshRef.current && typeof faceMeshRef.current.close === 'function') faceMeshRef.current.close()
+                  } catch (e) { /* ignore */ }
+                  streamRef.current = null
+                  mpCameraRef.current = null
+                  faceMeshRef.current = null
+                  initializeCamera()
+                }}
+                className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50 text-sm"
+              >
+                Retry camera
+              </button>
+
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={useFaceMesh} onChange={(e)=>setUseFaceMesh(e.target.checked)} className="w-4 h-4" />
+                Use ML placement
+              </label>
             </div>
 
             {/* Instructions */}
