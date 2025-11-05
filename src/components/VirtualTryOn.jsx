@@ -4,6 +4,23 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
+// Safe logging helpers to avoid runtime failures if `console.log` has been overridden
+const safeLog = (...args) => {
+  try {
+    if (typeof console !== 'undefined' && typeof console.log === 'function') console.log(...args)
+  } catch (e) { /* ignore logging errors */ }
+}
+const safeWarn = (...args) => {
+  try {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') console.warn(...args)
+  } catch (e) { /* ignore logging errors */ }
+}
+const safeError = (...args) => {
+  try {
+    if (typeof console !== 'undefined' && typeof console.error === 'function') console.error(...args)
+  } catch (e) { /* ignore logging errors */ }
+}
+
 export default function VirtualTryOn({ product: propProduct, onClose }) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasPermission, setHasPermission] = useState(false)
@@ -95,15 +112,15 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       if (cancelled) return
 
       if (videoRef.current) {
-        console.log('✅ Video element found, initializing camera...')
+        safeLog('✅ Video element found, initializing camera...')
         if (!startedRef.current) {
           startedRef.current = true
           initializeCamera(localProduct)
         } else {
-          console.log('Initialization already started; skipping duplicate init')
+          safeLog('Initialization already started; skipping duplicate init')
         }
       } else {
-        console.error('❌ Still no video element after waiting.')
+        safeError('❌ Still no video element after waiting.')
         setError('Internal error: video element not found after mounting.')
       }
     }
@@ -141,7 +158,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
 
       const video = videoRef.current
       if (!video) {
-        console.error('❌ Video element not found in DOM')
+        safeError('❌ Video element not found in DOM')
         setError('Internal error: video element not found')
         setIsLoading(false)
         return
@@ -156,19 +173,81 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       } catch (e) { /* ignore */ }
 
       // Request camera permission and stream
-      console.log('🎥 Requesting camera access...')
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
+      safeLog('🎥 Requesting camera access...')
+      let stream = null
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          }
+        })
+      } catch (gmErr) {
+        safeWarn('getUserMedia failed', gmErr)
+        // Provide more actionable messaging based on error type
+        let userMessage = 'Failed to access camera.'
+        if (gmErr.name === 'NotAllowedError' || gmErr.name === 'SecurityError' || gmErr.name === 'PermissionDeniedError') {
+          userMessage = 'Camera permission was denied. Please allow camera access in your browser and retry.'
+        } else if (gmErr.name === 'NotFoundError' || gmErr.name === 'DevicesNotFoundError') {
+          userMessage = 'No camera device found. Make sure a camera is connected.'
+        } else if (gmErr.name === 'NotReadableError' || gmErr.name === 'TrackStartError') {
+          userMessage = 'Camera is in use by another application or not accessible. Close other apps and retry.'
+        } else if (gmErr.name === 'OverconstrainedError' || gmErr.name === 'ConstraintNotSatisfiedError') {
+          userMessage = 'Unable to satisfy camera constraints. Try a different device or lower camera settings.'
         }
-      })
+
+        setError(userMessage)
+        setIsLoading(false)
+
+        // If permissions API is available, listen for changes and retry automatically when granted
+        try {
+          if (navigator.permissions && navigator.permissions.query) {
+            const p = await navigator.permissions.query({ name: 'camera' })
+            safeLog('Permissions camera state:', p.state)
+            const onPermChange = () => {
+              safeLog('Permissions change detected:', p.state)
+              if (p.state === 'granted') {
+                // small delay to allow browser to finalize device allocation
+                setTimeout(() => {
+                  initializeCamera(initialProduct)
+                }, 800)
+              }
+            }
+            p.addEventListener('change', onPermChange)
+            // store cleanup reference
+            initTimeoutRef.current = () => p.removeEventListener('change', onPermChange)
+          }
+        } catch (permErr) {
+          safeWarn('Permissions API unavailable or failed to query:', permErr)
+        }
+
+        // Also listen for devicechange as a fallback and retry once devices appear
+        try {
+          const onDeviceChange = async () => {
+            safeLog('mediaDevices devicechange event')
+            try {
+              const devices = await navigator.mediaDevices.enumerateDevices()
+              const hasVideo = devices.some(d => d.kind === 'videoinput')
+              if (hasVideo) {
+                setTimeout(() => initializeCamera(initialProduct), 800)
+              }
+            } catch (e) { /* ignore */ }
+          }
+          navigator.mediaDevices.addEventListener('devicechange', onDeviceChange)
+          // store cleanup reference
+          initTimeoutRef.current = () => navigator.mediaDevices.removeEventListener('devicechange', onDeviceChange)
+        } catch (dcErr) {
+          safeWarn('devicechange listener not available', dcErr)
+        }
+
+        return
+      }
 
       streamRef.current = stream
-      setHasPermission(true)
-      console.log('🎥 Camera stream obtained')
-      try { console.log('✅ Camera stream granted:', !!stream && !!stream.active) } catch (e) {}
+  setHasPermission(true)
+  safeLog('🎥 Camera stream obtained')
+  try { safeLog('✅ Camera stream granted:', !!stream && !!stream.active) } catch (e) {}
       // reset retry counter on success
       retryCountRef.current = 0
 
@@ -176,27 +255,27 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       // remove prior event handlers to avoid duplicate calls
       try { video.onloadedmetadata = null } catch (e) {}
       try { video.onplaying = null } catch (e) {}
-      video.srcObject = stream
-      console.log('🎬 video.srcObject set')
+  video.srcObject = stream
+  safeLog('🎬 video.srcObject set')
 
       // Try to start playback immediately; some browsers require an explicit play()
       (async () => {
         try {
-          console.log('▶️ Attempting video.play() immediately after attaching srcObject')
+          safeLog('▶️ Attempting video.play() immediately after attaching srcObject')
           await video.play()
-          console.log('✅ video.play() succeeded (immediate)')
+          safeLog('✅ video.play() succeeded (immediate)')
         } catch (playErr) {
-          console.warn('video.play() immediate attempt failed:', playErr)
+          safeWarn('video.play() immediate attempt failed:', playErr)
         }
       })()
 
       // Ensure playing/loaded handlers are set — this mirrors the snippet you provided
       video.onloadedmetadata = async () => {
-        console.log('🔔 video.onloadedmetadata')
+  safeLog('🔔 video.onloadedmetadata')
         try {
           await video.play()
         } catch (playErr) {
-          console.warn('video.play() failed or was blocked:', playErr)
+          safeWarn('video.play() failed or was blocked:', playErr)
         }
 
         // mark ready
@@ -205,7 +284,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
         // start MediaPipe only when requested and appropriate for product
         const productToUse = initialProduct || localProduct
         if (useFaceMesh && productToUse?.category === 'earrings') {
-          try {
+            try {
             const mp = await import('@mediapipe/face_mesh')
             const camUtil = await import('@mediapipe/camera_utils')
             const FaceMeshClass = mp.FaceMesh
@@ -253,17 +332,17 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
             mpCameraRef.current = mpCamera
             try {
               mpCamera.start()
-              console.log('🚀 Starting MediaPipe camera...')
+              safeLog('🚀 Starting MediaPipe camera...')
             } catch (startErr) {
-              console.error('MediaPipe Camera start failed, falling back to video-only mode', startErr)
+              safeError('MediaPipe Camera start failed, falling back to video-only mode', startErr)
             }
           } catch (mpErr) {
-            console.error('Failed to initialize MediaPipe FaceMesh', mpErr)
+            safeError('Failed to initialize MediaPipe FaceMesh', mpErr)
           }
         } // end if useFaceMesh && product is earrings
       } // end video.onloadedmetadata
     } catch (err) {
-      console.error('initializeCamera failed', err)
+      safeError('initializeCamera failed', err)
       setError('Failed to initialize camera')
       setIsLoading(false)
       startedRef.current = false
