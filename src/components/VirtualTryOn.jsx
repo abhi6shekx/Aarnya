@@ -238,12 +238,13 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
             })
 
             faceMeshRef.current = faceMesh
-
             const mpCamera = new CameraClass(video, {
               onFrame: async () => {
                 try {
                   await faceMesh.send({ image: video })
-                } catch (e) { /* ignore */ }
+                } catch (e) {
+                  // ignore send errors
+                }
               },
               width: 640,
               height: 480,
@@ -256,102 +257,18 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
             } catch (startErr) {
               console.error('MediaPipe Camera start failed, falling back to video-only mode', startErr)
             }
-          } catch (impErr) {
-            console.warn('Failed to dynamically load MediaPipe modules, falling back to video-only:', impErr)
+          } catch (mpErr) {
+            console.error('Failed to initialize MediaPipe FaceMesh', mpErr)
           }
-        }
-      }
-
-      video.onplaying = () => {
-        console.log('🔔 video.onplaying')
-        setIsLoading(false)
-      }
-
-      video.oncanplay = () => {
-        console.log('🔔 video.oncanplay')
-        setIsLoading(false)
-      }
-
-      // Safety timeout
-      if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current)
-      initTimeoutRef.current = setTimeout(() => {
-        // Check video readiness directly rather than relying on state closure
-        const ready = video && (video.readyState >= 3 || video.videoWidth > 0 || video.videoHeight > 0)
-        if (!ready) {
-          console.warn('Camera initialization timed out (no ready video)')
-          console.log('video.readyState=', video && video.readyState, 'videoWidth=', video && video.videoWidth)
-          setIsLoading(false)
-          setError('Camera initialization timed out. Please check your camera permissions or press Retry.')
-        }
-      }, 12000)
+        } // end if useFaceMesh && product is earrings
+      } // end video.onloadedmetadata
     } catch (err) {
-      console.error('❌ Camera init failed:', err)
-      // If this is a transient permission timing issue, retry after a short delay to let Chrome settle
-      const maxRetries = 2
-      if (retryCountRef.current < maxRetries) {
-        retryCountRef.current += 1
-        console.warn('Camera access denied or unavailable, retrying in 2s... (attempt', retryCountRef.current, 'of', maxRetries, ')')
-        setError('Camera access temporarily unavailable — retrying...')
-        // allow re-initialization
-        startedRef.current = false
-        setTimeout(() => initializeCamera(initialProduct), 2000)
-        return
-      }
-
-      setError('Camera access denied or unavailable. Please allow camera permissions to try on jewelry.')
+      console.error('initializeCamera failed', err)
+      setError('Failed to initialize camera')
       setIsLoading(false)
       startedRef.current = false
     }
-  }
 
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return
-
-    const canvas = canvasRef.current
-    const video = videoRef.current
-    const ctx = canvas.getContext('2d')
-
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    // Draw video frame
-    ctx.drawImage(video, 0, 0)
-
-    // Add jewelry overlay based on product type
-    drawJewelryOverlay(ctx, canvas.width, canvas.height)
-
-    // Convert to image and download
-    const link = document.createElement('a')
-    link.download = `${(localProduct?.name) || 'virtual-try-on'}-virtual-try-on.png`
-    link.href = canvas.toDataURL()
-    link.click()
-  }
-
-  const drawJewelryOverlay = (ctx, width, height) => {
-    const centerX = width / 2
-    const centerY = height / 2
-
-    // Simple positioning based on product category
-    switch (localProduct?.category) {
-      case 'earrings':
-        // Draw earrings on both sides of face
-        drawEarring(ctx, centerX - 80, centerY - 20) // Left ear
-        drawEarring(ctx, centerX + 80, centerY - 20) // Right ear
-        break
-      
-      case 'hair-clips':
-        // Draw hair clip on top of head
-        drawHairClip(ctx, centerX, centerY - 120)
-        break
-      
-      case 'rings':
-        // Draw ring on finger (we'll position it lower)
-        drawRing(ctx, centerX - 50, centerY + 150)
-        break
-      
-      default:
-        break
-    }
   }
 
   const drawEarring = (ctx, x, y) => {
