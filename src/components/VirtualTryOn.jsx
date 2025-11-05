@@ -134,15 +134,29 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
 
       streamRef.current = stream
       setHasPermission(true)
+      console.log('🎥 Camera stream obtained')
 
       // attach stream to video element
       // remove prior event handlers to avoid duplicate calls
       try { video.onloadedmetadata = null } catch (e) {}
       try { video.onplaying = null } catch (e) {}
       video.srcObject = stream
+      console.log('🎬 video.srcObject set')
+
+      // Try to start playback immediately; some browsers require an explicit play()
+      (async () => {
+        try {
+          console.log('▶️ Attempting video.play() immediately after attaching srcObject')
+          await video.play()
+          console.log('✅ video.play() succeeded (immediate)')
+        } catch (playErr) {
+          console.warn('video.play() immediate attempt failed:', playErr)
+        }
+      })()
 
       // Ensure playing/loaded handlers are set — this mirrors the snippet you provided
       video.onloadedmetadata = async () => {
+        console.log('🔔 video.onloadedmetadata')
         try {
           await video.play()
         } catch (playErr) {
@@ -213,14 +227,23 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
       }
 
       video.onplaying = () => {
+        console.log('🔔 video.onplaying')
+        setIsLoading(false)
+      }
+
+      video.oncanplay = () => {
+        console.log('🔔 video.oncanplay')
         setIsLoading(false)
       }
 
       // Safety timeout
       if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current)
       initTimeoutRef.current = setTimeout(() => {
-        if (isLoading) {
-          console.warn('Camera initialization timed out')
+        // Check video readiness directly rather than relying on state closure
+        const ready = video && (video.readyState >= 3 || video.videoWidth > 0 || video.videoHeight > 0)
+        if (!ready) {
+          console.warn('Camera initialization timed out (no ready video)')
+          console.log('video.readyState=', video && video.readyState, 'videoWidth=', video && video.videoWidth)
           setIsLoading(false)
           setError('Camera initialization timed out. Please check your camera permissions or press Retry.')
         }
