@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===========================
+   GLOBAL BASE STYLES
+=========================== */
+html, body {
+  @apply bg-ivory text-charcoal font-body antialiased;
+}
+
+/* ===========================
+   CONTAINER
+=========================== */
+.container-base {
+  @apply max-w-6xl mx-auto px-4;
+}
+
+/* ===========================
+   CARDS
+=========================== */
+.card {
+  @apply bg-white rounded-2xl shadow-soft border border-blush-200 transition-all duration-300;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(236, 168, 188, 0.35);
+}
+
+/* ===========================
+   BUTTONS
+=========================== */
+.btn {
+  @apply inline-flex items-center justify-center rounded-full px-6 py-2.5 font-medium transition-all duration-300 cursor-pointer;
+}
+
+/* Primary pink gradient button */
+.btn-primary {
+  background: linear-gradient(135deg, #f3b7d0, #e56a9d);
+  color: white;
+  box-shadow: 0 4px 14px rgba(229, 106, 157, 0.3);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #e56a9d, #f3b7d0);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(229, 106, 157, 0.4);
+}
+
+/* Outline button */
+.btn-outline {
+  @apply bg-white border border-blush-300 text-charcoal;
+}
+.btn-outline:hover {
+  @apply bg-blush-100 text-rose-600;
+}
+
+/* Rose solid button */
+.btn-rose {
+  @apply btn bg-rose-500 text-white;
+}
+.btn-rose:hover {
+  @apply bg-rose-600;
+}
+
+/* ===========================
+   TYPOGRAPHY
+=========================== */
+.h1 {
+  @apply font-display text-4xl md:text-6xl leading-tight text-charcoal;
+}
+.h2 {
+  @apply font-display text-3xl md:text-4xl leading-tight text-charcoal;
+}
+.h3 {
+  @apply font-display text-2xl md:text-3xl leading-tight;
+}
+.text-muted {
+  @apply text-rose-700/70;
+}
+
+/* ===========================
+   BACKGROUND THEMES
+=========================== */
+.bg-watercolor {
+  @apply bg-gradient-to-br from-blush-50 to-rose-100;
+}
+.bg-brush {
+  @apply bg-gradient-to-r from-blush-100 to-rose-50;
+}
+
+/* ===========================
+   NAV LINKS
+=========================== */
+nav a {
+  @apply relative px-4 py-2 rounded-full text-charcoal font-medium transition;
+}
+
+nav a::after {
+  content: "";
+  @apply absolute left-0 bottom-0;
+  width: 0%;
+  height: 2px;
+  background-color: #e56a9d;
+  transition: width 0.3s ease;
+}
+
+nav a:hover::after {
+  width: 100%;
+}
+
+.active-nav {
+  @apply bg-blush-200 text-rose-700 shadow-soft;
+}
+
+/* ===========================
+   ANIMATIONS
+=========================== */
+.fade-in {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Fade in animation for tooltip */
+.animate-fade-in {
+  animation: fadeInTooltip 0.3s ease forwards;
+}
+
+@keyframes fadeInTooltip {
+  from { opacity: 0; transform: translateY(5px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Soft pulse animation for WhatsApp button */
+@keyframes pulse-soft {
+  0% { box-shadow: 0 0 0 0 rgba(255, 182, 193, 0.6); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 182, 193, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 182, 193, 0); }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2.5s infinite;
+}
+
+/* Button styles */
+.btn-admin {
+  @apply font-medium transition-all duration-300;
+}
+
+.btn-admin:hover {
+  transform: translateY(-1px);
+}
+
+/* subtle fade-up utility for elegant entrance */
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  opacity: 0;
+  animation: fadeUp .6s ease-out forwards;
+  animation-delay: var(--d, 0ms);
+}

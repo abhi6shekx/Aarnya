@@ -1,0 +1,123 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to get user role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Helper function to get role hierarchy level
+    function getRoleLevel(role) {
+      return role == 'superadmin' ? 5 :
+             role == 'admin' ? 4 :
+             role == 'manager' ? 3 :
+             role == 'staff' ? 2 :
+             1; // customer
+    }
+    
+    // Helper function to check if user is superadmin
+    function isSuperAdmin() {
+      return request.auth != null && getUserRole() == 'superadmin';
+    }
+    
+    // Helper function to check if user is admin or higher
+    function isAdmin() {
+      return request.auth != null && getRoleLevel(getUserRole()) >= 4;
+    }
+    
+    // Helper function to check if user is manager or higher
+    function canManageProducts() {
+      return request.auth != null && getRoleLevel(getUserRole()) >= 3;
+    }
+    
+    // Helper function to check if user is staff or higher
+    function isStaff() {
+      return request.auth != null && getRoleLevel(getUserRole()) >= 2;
+    }
+    
+    // Helper function to check if user can manage another user's role
+    function canManageUserRole(targetRole) {
+      return isSuperAdmin() && getRoleLevel(getUserRole()) > getRoleLevel(targetRole);
+    }
+    
+    // Users collection - Complex role-based access control
+    match /users/{userId} {
+      // Users can read their own data, staff+ can read all users, superadmin can manage all
+      allow read: if request.auth != null && 
+        (request.auth.uid == userId || isStaff());
+      
+      // Users can update their own profile (except role), only superadmin can change roles
+      allow update: if request.auth != null && 
+        (request.auth.uid == userId && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
+         isSuperAdmin());
+      
+      // Users can create their own profile, only superadmin can set initial roles other than customer
+      allow create: if request.auth != null && 
+        (request.auth.uid == userId && 
+         (!request.resource.data.keys().hasAny(['role']) || 
+          request.resource.data.role == 'customer') ||
+         isSuperAdmin());
+      
+      // Only superadmin can delete users
+      allow delete: if isSuperAdmin();
+    }
+    
+    // Products collection - Hierarchical product management
+    match /products/{productId} {
+      allow read: if true; // Public read access
+      allow create, update: if canManageProducts();
+      allow delete: if isAdmin(); // Only admin+ can delete products
+    }
+    
+    // Orders collection - Order management based on roles
+    match /orders/{orderId} {
+      // Users can read their own orders, staff+ can read all orders
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isStaff());
+      
+      // Users can create/update their own orders, admin+ can manage all orders
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Only admin+ can delete orders
+      allow delete: if isAdmin();
+    }
+    
+    // Custom designs - Design management and approval workflow
+    match /customDesigns/{designId} {
+      // Users can read their own designs, admin+ can read all for approval
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Users can create/update their own designs, admin+ can approve/manage all
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         (isAdmin() && request.resource.data.keys().hasAny(['status', 'adminNotes', 'approvedBy'])));
+      
+      // Only admin+ can delete custom designs
+      allow delete: if isAdmin();
+    }
+    
+    // User addresses - Personal data protection
+    match /userAddresses/{addressId} {
+      allow read, write: if request.auth != null && 
+        (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Cart items - Shopping cart protection
+    match /cartItems/{cartId} {
+      allow read, write: if request.auth != null && 
+        (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+    }
+  }
+}

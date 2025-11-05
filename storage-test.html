@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Storage Test</title>
+</head>
+<body>
+    <h1>Firebase Storage Test</h1>
+    <input type="file" id="fileInput" accept="image/*">
+    <button onclick="testUpload()">Test Upload</button>
+    <button onclick="checkFirebase()">Check Firebase Setup</button>
+    <div id="result"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js'
+        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js'
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBcdhApjX2i8S81cLv7FAQcO5jZFY8DWt8",
+            authDomain: "aarnya-store.firebaseapp.com",
+            projectId: "aarnya-store",
+            storageBucket: "aarnya-store.appspot.com",
+            messagingSenderId: "1079893374787",
+            appId: "1:1079893374787:web:35daeb78d1dd99d81ce1f6"
+        }
+
+        let app, storage;
+
+        try {
+            app = initializeApp(firebaseConfig)
+            storage = getStorage(app)
+            console.log('✅ Firebase initialized successfully')
+            console.log('App:', app)
+            console.log('Storage:', storage)
+            console.log('Storage bucket:', storage.app.options.storageBucket)
+        } catch (error) {
+            console.error('❌ Firebase initialization failed:', error)
+        }
+
+        window.checkFirebase = function() {
+            const result = document.getElementById('result')
+            
+            console.log('=== FIREBASE SETUP CHECK ===')
+            console.log('1. App initialized:', !!app)
+            console.log('2. Storage initialized:', !!storage)
+            console.log('3. Storage bucket:', storage?.app?.options?.storageBucket)
+            
+            try {
+                const testRef = ref(storage, 'test/connection-test.txt')
+                console.log('4. Storage reference test:', testRef.fullPath)
+                result.innerHTML = '✅ Firebase setup looks good! Check console for details.'
+            } catch (error) {
+                console.error('4. Storage reference failed:', error)
+                result.innerHTML = `❌ Storage reference failed: ${error.message}`
+            }
+        }
+
+        window.testUpload = async function() {
+            const fileInput = document.getElementById('fileInput')
+            const result = document.getElementById('result')
+            
+            if (!fileInput.files[0]) {
+                result.innerHTML = 'Please select a file first'
+                return
+            }
+
+            if (!storage) {
+                result.innerHTML = '❌ Firebase Storage not initialized'
+                return
+            }
+
+            const file = fileInput.files[0]
+            result.innerHTML = 'Starting upload test...'
+
+            console.log('=== UPLOAD TEST START ===')
+            console.log('File:', file.name, file.type, file.size)
+
+            try {
+                // Step 1: Create reference
+                console.log('Step 1: Creating storage reference...')
+                const storageRef = ref(storage, `test/${Date.now()}_${file.name}`)
+                console.log('Storage ref created:', storageRef.fullPath)
+                result.innerHTML = 'Reference created, starting upload...'
+                
+                // Step 2: Upload with timeout
+                console.log('Step 2: Starting upload...')
+                const uploadPromise = uploadBytes(storageRef, file)
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Upload timeout after 10 seconds')), 10000)
+                })
+                
+                const snapshot = await Promise.race([uploadPromise, timeoutPromise])
+                console.log('Step 3: Upload completed:', snapshot)
+                result.innerHTML = 'Upload completed, getting URL...'
+                
+                // Step 3: Get download URL
+                const downloadURL = await getDownloadURL(storageRef)
+                console.log('Step 4: Download URL:', downloadURL)
+                
+                result.innerHTML = `✅ SUCCESS! File uploaded successfully!<br>URL: ${downloadURL}`
+                
+            } catch (error) {
+                console.error('=== UPLOAD ERROR ===')
+                console.error('Error:', error)
+                console.error('Error code:', error.code)
+                console.error('Error message:', error.message)
+                
+                let errorMsg = 'Unknown error'
+                if (error.code === 'storage/unauthorized') {
+                    errorMsg = '🚨 STORAGE RULES ISSUE: Go to Firebase Console → Storage → Rules and set allow read, write: if true;'
+                } else if (error.code === 'storage/unknown') {
+                    errorMsg = '🚨 STORAGE NOT ENABLED: Go to Firebase Console → Storage → Get Started'
+                } else if (error.message.includes('timeout')) {
+                    errorMsg = '🚨 UPLOAD TIMEOUT: Storage might not be enabled or network issue'
+                } else {
+                    errorMsg = `🚨 ${error.code}: ${error.message}`
+                }
+                
+                result.innerHTML = `❌ ${errorMsg}`
+            }
+        }
+
+        // Auto-run setup check on load
+        setTimeout(() => {
+            console.log('Auto-running Firebase setup check...')
+            window.checkFirebase()
+        }, 1000)
+    </script>
+</body>
+</html>

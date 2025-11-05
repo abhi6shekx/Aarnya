@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="2400" height="1200" viewBox="0 0 2400 1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Pastel pink gradient -->
+    <linearGradient id="pinkGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7cfe1"/>
+      <stop offset="60%" stop-color="#eba7c6"/>
+      <stop offset="100%" stop-color="#d97fa7"/>
+    </linearGradient>
+
+    <!-- Soft inner-glow gloss effect -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Subtle shadow for readability -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feOffset dx="0" dy="6" in="SourceAlpha" result="off"/>
+      <feGaussianBlur in="off" stdDeviation="8" result="blur2"/>
+      <feColorMatrix in="blur2" type="matrix"
+        values="0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 0.25 0" result="shadowColor"/>
+      <feMerge>
+        <feMergeNode in="shadowColor"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Transparent background -->
+  <rect width="100%" height="100%" fill="none" />
+
+  <!-- Brand name -->
+  <text x="1200" y="580"
+        text-anchor="middle"
+        font-size="320"
+        font-weight="500"
+        font-family="Brush Script MT, Segoe Script, Lucida Handwriting, cursive"
+        fill="url(#pinkGrad)"
+        filter="url(#softGlow)">
+    Aarnya
+  </text>
+
+  <!-- Tagline -->
+  <text x="1200" y="760"
+        text-anchor="middle"
+        font-size="84"
+        letter-spacing="1.2"
+        font-family="Didot, Bodoni MT, Times New Roman, serif"
+        fill="url(#pinkGrad)"
+        filter="url(#shadow)">
+    Where elegance meets emotion
+  </text>
+</svg>
