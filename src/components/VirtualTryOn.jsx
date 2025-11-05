@@ -289,6 +289,75 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
     ctx.restore()
   }
 
+  const capturePhoto = () => {
+    try {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      if (!video || !canvas) return
+
+      const width = video.videoWidth || 640
+      const height = video.videoHeight || 480
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      // The video element is mirrored via CSS (scaleX(-1)). To capture the same mirrored view,
+      // flip the canvas horizontally before drawing the video frame.
+      ctx.save()
+      ctx.scale(-1, 1)
+      ctx.drawImage(video, -width, 0, width, height)
+      ctx.restore()
+
+      // If product overlay drawing is desired, we could draw overlays here using drawEarring/drawRing etc.
+
+      // Draw product overlays onto the captured canvas so the saved snapshot includes them.
+      try {
+        const category = (localProduct && localProduct.category) ? localProduct.category : null
+        const centerX = width / 2
+        const centerY = height / 2
+        // use proportional offsets so overlays scale with video size
+        const offsetX = Math.round(width * 0.12)
+        const offsetY = Math.round(height * 0.12)
+
+        switch (category) {
+          case 'earrings':
+            // approximate ear positions relative to center
+            drawEarring(ctx, centerX - offsetX, centerY - offsetY)
+            drawEarring(ctx, centerX + offsetX, centerY - offsetY)
+            break
+          case 'hair-clips':
+            drawHairClip(ctx, centerX, centerY - Math.round(height * 0.28))
+            break
+          case 'rings':
+            drawRing(ctx, centerX + Math.round(width * 0.18), centerY + Math.round(height * 0.32))
+            break
+          default:
+            // no overlay
+            break
+        }
+      } catch (overlayErr) {
+        console.warn('Failed to draw overlay on capture:', overlayErr)
+      }
+
+      // Convert to data URL and trigger download
+      const dataUrl = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `${(localProduct && localProduct.name) ? localProduct.name.replace(/\s+/g, '_') : 'tryon'}_snapshot.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+
+      // small UI feedback
+      setIsRecording(true)
+      setTimeout(() => setIsRecording(false), 700)
+    } catch (err) {
+      console.error('capturePhoto failed', err)
+      setError('Failed to capture photo')
+    }
+  }
+
   const drawHairClip = (ctx, x, y) => {
     ctx.save()
     
@@ -403,7 +472,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
           {/* Controls */}
           <div className="flex items-center justify-center gap-4">
             <button
-              onClick={capturePhoto}
+              onClick={() => { if (typeof capturePhoto === 'function') capturePhoto() }}
               className="btn-primary flex items-center gap-2"
               disabled={isLoading}
             >
