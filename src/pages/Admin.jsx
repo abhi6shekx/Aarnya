@@ -313,9 +313,9 @@ function AdminContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blush-50 to-rose-100" style={{fontFamily: 'Playfair Display, serif'}}>
-      <div className="container-base py-12">
+      <div className="container-base px-4 sm:px-6 md:px-12 py-8 sm:py-12">
         <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-blush-500 to-rose-500 bg-clip-text text-transparent" style={{fontFamily: 'Great Vibes, cursive'}}>
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gradient-to-r from-blush-500 to-rose-500 bg-clip-text text-transparent" style={{fontFamily: 'Great Vibes, cursive'}}>
             {editProduct ? `Editing: ${editProduct.name}` : 'Admin Panel'}
           </h1>
           <p className="text-rose-700 text-lg mt-4 opacity-70">
@@ -323,7 +323,7 @@ function AdminContent() {
           </p>
         </div>
 
-        <div className="card p-8 space-y-6 mb-12">
+  <div className="card p-6 sm:p-8 space-y-6 mb-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-blush-600 bg-blush-50 p-3 rounded-xl">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -348,7 +348,7 @@ function AdminContent() {
               <div>
                 <label className="block text-sm font-medium text-charcoal mb-2">Product Name</label>
                 <input
-                  className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
                   placeholder="Enter product name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -358,7 +358,7 @@ function AdminContent() {
               <div>
                 <label className="block text-sm font-medium text-charcoal mb-2">Price (INR)</label>
                 <input
-                  className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
                   placeholder="Enter price"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
@@ -368,7 +368,7 @@ function AdminContent() {
               <div>
                 <label className="block text-sm font-medium text-charcoal mb-2">Weight (kg)</label>
                 <input
-                  className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
                   placeholder="e.g. 0.08"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
@@ -378,7 +378,7 @@ function AdminContent() {
               <div>
                 <label className="block text-sm font-medium text-charcoal mb-2">Category</label>
                 <input
-                  className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
                   placeholder="Handmade, Ready-made, etc."
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -390,7 +390,7 @@ function AdminContent() {
               <div>
                 <label className="block text-sm font-medium text-charcoal mb-2">Short Description</label>
                 <textarea
-                  className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
                   placeholder="Brief product description"
                   rows="3"
                   value={shortDesc}
@@ -401,7 +401,7 @@ function AdminContent() {
               <div>
                 <label className="block text-sm font-medium text-charcoal mb-2">Full Description</label>
                 <textarea
-                  className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
                   placeholder="Detailed product description"
                   rows="4"
                   value={fullDesc}
@@ -409,18 +409,18 @@ function AdminContent() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                   <label className="block text-sm font-medium text-charcoal mb-2">Length (cm)</label>
-                  <input className="w-full px-3 py-2 border border-blush-200 rounded-xl" placeholder="e.g. 10" value={length} onChange={(e)=>setLength(e.target.value)} />
+                  <input className="w-full px-2 py-2 sm:px-3 sm:py-2 border border-blush-200 rounded-xl" placeholder="e.g. 10" value={length} onChange={(e)=>setLength(e.target.value)} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-charcoal mb-2">Breadth (cm)</label>
-                  <input className="w-full px-3 py-2 border border-blush-200 rounded-xl" placeholder="e.g. 7" value={breadth} onChange={(e)=>setBreadth(e.target.value)} />
+                  <input className="w-full px-2 py-2 sm:px-3 sm:py-2 border border-blush-200 rounded-xl" placeholder="e.g. 7" value={breadth} onChange={(e)=>setBreadth(e.target.value)} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-charcoal mb-2">Height (cm)</label>
-                  <input className="w-full px-3 py-2 border border-blush-200 rounded-xl" placeholder="e.g. 3" value={height} onChange={(e)=>setHeight(e.target.value)} />
+                  <input className="w-full px-2 py-2 sm:px-3 sm:py-2 border border-blush-200 rounded-xl" placeholder="e.g. 3" value={height} onChange={(e)=>setHeight(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -432,7 +432,7 @@ function AdminContent() {
               <div>
                 <label className="block text-sm font-medium text-charcoal mb-2">Gender Category</label>
                 <select
-                  className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
                 >
@@ -446,7 +446,7 @@ function AdminContent() {
               <div>
                 <label className="block text-sm font-medium text-charcoal mb-2">Product Type</label>
                 <select
-                  className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
                   value={productType}
                   onChange={(e) => setProductType(e.target.value)}
                 >
@@ -504,12 +504,12 @@ function AdminContent() {
             </div>
           </div>
 
-          <div>
+            <div>
             <label className="block text-sm font-medium text-charcoal mb-2">Product Images</label>
             <input
               type="file"
               multiple
-              className="w-full px-4 py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blush-100 file:text-blush-600 hover:file:bg-blush-200"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-blush-200 rounded-xl focus:ring-2 focus:ring-blush-300 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blush-100 file:text-blush-600 hover:file:bg-blush-200"
               onChange={handleFileChange}
             />
             <p className="text-xs text-muted mt-2 flex items-center">
@@ -523,7 +523,7 @@ function AdminContent() {
           <button
             onClick={editProduct ? handleUpdate : addProduct}
             disabled={loading}
-            className="btn-primary w-full py-4 text-lg font-medium relative overflow-hidden"
+            className="btn-primary w-full py-3 sm:py-4 text-base sm:text-lg font-medium relative overflow-hidden"
           >
             {loading ? (
               <div className="flex items-center justify-center">
