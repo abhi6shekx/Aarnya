@@ -6,6 +6,7 @@ import CategoriesMenu from './CategoriesMenu'
 export default function Header(){
   const { user, logout, userRole, canManageProducts, isSuperAdmin } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const menuRef = useRef(null)
   const navigate = useNavigate()
 
@@ -50,7 +51,7 @@ export default function Header(){
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-blush-200 shadow-sm">
-      <div className="container-base flex items-center justify-between h-20">
+      <div className="container-base flex items-center justify-between h-20 px-4 sm:px-6 md:px-12">
         
         {/* Logo + Brand */}
         <Link to="/" className="flex items-center gap-3">
@@ -63,8 +64,21 @@ export default function Header(){
           </div>
         </Link>
 
-        {/* Navigation */}
-        <nav className="flex items-center gap-4">
+        {/* Mobile hamburger */}
+        <div className="md:hidden mr-2">
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            aria-label="Toggle menu"
+            className="p-2 rounded-md border border-blush-100 bg-white/70 hover:bg-blush-50"
+          >
+            <svg className="w-6 h-6 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Navigation - desktop */}
+        <nav className="hidden md:flex items-center gap-4">
           <NavLink to="/products" 
             className={({ isActive }) => 
               `relative px-4 py-2 rounded-full text-charcoal transition ${
@@ -217,6 +231,35 @@ export default function Header(){
             </Link>
           )}
         </nav>
+
+        {/* Mobile menu panel */}
+        {showMobileMenu && (
+          <div className="absolute top-full left-0 right-0 bg-white z-40 border-t border-blush-100 md:hidden">
+            <div className="px-4 py-4 flex flex-col gap-2">
+              <NavLink to="/products" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>Shop</NavLink>
+              <div className="px-3 py-2">
+                {/* Keep the categories component visible in mobile as-is if it supports touch */}
+                <CategoriesMenu compactOnMobile={true} />
+              </div>
+              <NavLink to="/cart" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>Cart</NavLink>
+              <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50">Chat on WhatsApp</a>
+
+              {user ? (
+                <>
+                  <NavLink to="/profile" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>My Profile</NavLink>
+                  <NavLink to="/orders" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>My Orders</NavLink>
+                  <NavLink to="/profile#addresses" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>My Addresses</NavLink>
+                  {(userRole === 'admin' || userRole === 'manager' || userRole === 'superadmin') && (
+                    <NavLink to="/admin" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>Admin Panel</NavLink>
+                  )}
+                  <button onClick={() => { handleLogout(); setShowMobileMenu(false) }} className="text-rose-600 px-3 py-2 text-left">Sign Out</button>
+                </>
+              ) : (
+                <NavLink to="/profile" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>Sign In</NavLink>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   )

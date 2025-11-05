@@ -74,17 +74,17 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-25 to-violet-50"></div>
-        <div className="relative container-base">
-          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh] py-20">
+        <div className="relative px-4 sm:px-6 md:px-12 py-8 md:py-16 text-center md:text-left">
+          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
             {/* Content */}
-            <div className="space-y-8 fade-up">
+            <div className="space-y-8 fade-up bg-gradient-to-b from-pink-50 to-white rounded-3xl shadow-sm p-6">
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-rose-200">
                   <span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
                   <span className="text-sm font-medium text-rose-700">Handcrafted with Love</span>
                 </div>
                 
-                <h1 className="font-display text-5xl lg:text-7xl leading-tight text-charcoal">
+                <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-semibold leading-tight text-charcoal text-center md:text-left">
                   Where elegance
                   <span className="block text-rose-600">meets emotion</span>
                 </h1>
@@ -118,13 +118,13 @@ export default function Home() {
 
             {/* Image */}
             <div className="relative fade-up" style={{'--d': '300ms'}}>
-                <div className="relative">
+              <div className="relative">
                 <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl">
                   <div className="bg-white flex items-center justify-center w-full h-full">
                     <img
                       src={heroSrc}
                       alt="Aarnya favicon"
-                      className="w-96 h-96 lg:w-[48rem] lg:h-[48rem] p-6 object-contain"
+                      className="w-64 h-64 sm:w-80 sm:h-80 md:w-[48rem] md:h-[48rem] p-6 object-contain"
                       loading="eager"
                       onError={() => { if (heroSrc !== '/logo.svg') setHeroSrc('/logo.svg') }}
                     />
