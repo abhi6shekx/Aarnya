@@ -18,6 +18,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
   const faceMeshRef = useRef(null)
   const location = useLocation()
   const params = useParams()
+  const routeProductId = params.id || params.productId || params.productId?.toString()
   const navigate = useNavigate()
 
   // product may come from prop, location.state, or we can fetch by param id
@@ -29,9 +30,9 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
   useEffect(() => {
     // If product is not provided via props/state but an id param is present, fetch it
     const tryFetchProduct = async () => {
-      if (!localProduct && params?.id) {
+      if (!localProduct && routeProductId) {
         try {
-          const d = await getDoc(doc(db, 'products', params.id))
+          const d = await getDoc(doc(db, 'products', routeProductId))
           if (d.exists()) setLocalProduct({ id: d.id, ...d.data() })
           else setError('Product not found')
         } catch (err) {
@@ -58,6 +59,25 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
     }
   }, [])
 
+  // Close on Escape key for convenience
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') handleClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
+  const handleClose = () => {
+    if (typeof onClose === 'function') return onClose()
+    // if no onClose passed (route-based), navigate back
+    try {
+      navigate(-1)
+    } catch (e) {
+      navigate('/')
+    }
+  }
+
   const initializeCamera = async () => {
     try {
       setIsLoading(true)
@@ -77,6 +97,15 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        // Try to start video playback promptly; some browsers require play() to be called.
+        try {
+          // play() returns a promise; await so we can know when video is ready
+          // but don't block too long — wrap in try/catch
+          await videoRef.current.play()
+        } catch (playErr) {
+          // Not fatal: video may still fire loadedmetadata later
+          console.warn('video.play() failed or was blocked:', playErr)
+        }
       }
 
   // Try to initialize MediaPipe FaceMesh for earrings placement (only when product is earrings)
@@ -124,9 +153,23 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
         })
 
         mpCameraRef.current = mpCamera
-        mpCamera.start()
-        setIsLoading(false)
-        return
+        try {
+          // start may throw if camera not ready; wrap in try/catch
+          mpCamera.start()
+          // small delay to allow first frame to arrive; if loadedmetadata already fired above, isLoading will be false
+          setTimeout(() => {
+            if (videoRef.current && (videoRef.current.readyState >= 2 || !isLoading)) {
+              setIsLoading(false)
+            } else {
+              // still not ready after short wait — mark not loading so UI can show controls and a helpful message
+              setIsLoading(false)
+            }
+          }, 300)
+          return
+        } catch (startErr) {
+          console.error('MediaPipe Camera start failed, falling back to video-only mode', startErr)
+          // fallback to video-only flow below
+        }
       }
 
       // Fallback: simple video stream, keep isLoading false when ready
@@ -135,6 +178,17 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
           setIsLoading(false)
         }
       }
+
+      // Safety timeout: if camera hasn't initialized within 8s, stop showing the spinner and show a helpful error
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Camera initialization timed out')
+          setIsLoading(false)
+          setError('Camera initialization timed out. Please check your camera permissions or try reloading the page.')
+        }
+      }, 8000)
+      // clear timeout when leaving or when not loading
+      if (!isLoading) clearTimeout(timeoutId)
     } catch (err) {
       setError('Camera access denied. Please allow camera permissions to try on jewelry.')
       setIsLoading(false)
@@ -258,7 +312,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
             </div>
             <h3 className="text-lg font-semibold mb-2">Camera Access Required</h3>
             <p className="text-gray-600 mb-4">{error}</p>
-            <button onClick={onClose} className="btn-primary">
+            <button onClick={handleClose} className="btn-primary">
               Close
             </button>
           </div>
@@ -268,7 +322,13 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onMouseDown={(e) => {
+        // if user clicked on backdrop (not the modal), close
+        if (e.target === e.currentTarget) handleClose()
+      }}
+    >
       <div className="bg-white rounded-2xl p-6 max-w-4xl mx-4 w-full max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -276,7 +336,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
                 <p className="text-gray-600">Try {localProduct?.name || 'this item'} virtually</p>
           </div>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
           >
             ✕
@@ -324,7 +384,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
                 Capture Photo
               </button>
               
-              <button onClick={onClose} className="btn-outline">
+              <button onClick={handleClose} className="btn-outline">
                 Close Try-On
               </button>
             </div>
