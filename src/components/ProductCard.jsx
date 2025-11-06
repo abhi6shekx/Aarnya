@@ -49,6 +49,7 @@ export default function ProductCard({ p }) {
   const navigate = useNavigate()
   const { user } = useAuthContext()
   const [saved, setSaved] = useState(false)
+  const [animVariant, setAnimVariant] = useState('')
 
   useEffect(() => {
     if (user && user.uid) {
@@ -84,37 +85,57 @@ export default function ProductCard({ p }) {
       <div className="absolute top-2 left-2 z-20">
         <button
           aria-label={saved ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-pressed={saved}
+          title={saved ? 'Remove from wishlist' : 'Add to wishlist'}
           onClick={async (e) => {
             e.preventDefault()
             try {
+              let newSaved = saved
               if (user && user.uid) {
                 if (saved) {
                   await removeFromUserWishlist(user.uid, p.id)
                   // also remove from local cache
                   await removeFromLocalWishlist(p.id)
-                  setSaved(false)
+                  newSaved = false
                 } else {
                   await addToUserWishlist(user.uid, p.id)
                   await addToLocalWishlist(p.id)
-                  setSaved(true)
+                  newSaved = true
                 }
               } else {
                 // guest: toggle in localStorage
                 if (isInLocalWishlist(p.id)) {
                   await removeFromLocalWishlist(p.id)
-                  setSaved(false)
+                  newSaved = false
                 } else {
                   await addToLocalWishlist(p.id)
-                  setSaved(true)
+                  newSaved = true
                 }
               }
+              // Update local state and trigger animation variant
+              setSaved(newSaved)
+              setAnimVariant(newSaved ? 'add' : 'remove')
             } catch (err) {
               console.error('Wishlist toggle failed', err)
             }
           }}
-          className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-105 transition"
+          className={
+            `w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md transition-transform duration-200 ` +
+            `hover:scale-105 focus:outline-none focus:ring-2 focus:ring-rose-300`
+          }
         >
-          <svg className={`w-5 h-5 ${saved ? 'text-rose-500' : 'text-gray-400'}`} viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke={saved ? 'currentColor' : 'currentColor'} strokeWidth="1.5">
+          {/* visually-hidden live region for screen readers to announce status changes */}
+          <span className="sr-only" aria-live="polite">{saved ? 'Added to wishlist' : 'Removed from wishlist'}</span>
+          <svg
+            onAnimationEnd={() => setAnimVariant('')}
+            className={`w-5 h-5 transform transition-all duration-200 ${saved ? 'text-rose-500 scale-110' : 'text-gray-400 scale-100'} ${animVariant === 'add' ? 'animate-heart-pop' : ''} ${animVariant === 'remove' ? 'animate-heart-pop-reverse' : ''}`}
+            viewBox="0 0 24 24"
+            fill={saved ? 'currentColor' : 'none'}
+            stroke={saved ? 'currentColor' : 'currentColor'}
+            strokeWidth="1.5"
+            aria-hidden="true"
+            focusable="false"
+          >
             <path d="M12 21s-7-4.35-9-7.5C1.2 9.7 4 5 8 5c2.1 0 3 1.5 4 2.5C13 6.5 13.9 5 16 5c4 0 6.8 4.7 5 8.5C19 16.65 12 21 12 21z" />
           </svg>
         </button>

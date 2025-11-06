@@ -39,6 +39,8 @@ function AdminContent() {
   
   // Edit mode state
   const [editProduct, setEditProduct] = useState(null)
+  // Product featured flag (used in add/edit form)
+  const [featured, setFeatured] = useState(false)
 
   // New enhanced product fields
   const [gender, setGender] = useState('')
@@ -144,6 +146,7 @@ function AdminContent() {
         shortDesc,
         fullDesc,
         images: imageData, // Now stores [{ url, publicId }, ...]
+        featured: !!featured,
         // New enhanced fields
         gender,
         productType,
@@ -178,6 +181,7 @@ function AdminContent() {
     setProductType(product.productType || '')
     setAvailableSizes(product.availableSizes || [])
     setVirtualTryOnEnabled(product.virtualTryOnEnabled || false)
+  setFeatured(product.featured || false)
     setWeight(product.weight?.toString?.() || product.weight || '')
     setLength(product.length?.toString?.() || product.length || '')
     setBreadth(product.breadth?.toString?.() || product.breadth || '')
@@ -214,6 +218,7 @@ function AdminContent() {
         shortDesc,
         fullDesc,
         images: imageData,
+        featured: !!featured,
         gender,
         productType,
         availableSizes: productType === 'rings' ? availableSizes : [],
@@ -250,6 +255,7 @@ function AdminContent() {
     setProductType('')
     setAvailableSizes([])
     setVirtualTryOnEnabled(false)
+    setFeatured(false)
     setWeight('')
     setLength('')
     setBreadth('')
@@ -501,6 +507,18 @@ function AdminContent() {
                   )}
                 </label>
               </div>
+              <div className="flex items-center space-x-3 mt-3">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={featured}
+                  onChange={(e) => setFeatured(e.target.checked)}
+                  className="w-4 h-4 text-yellow-400 focus:ring-yellow-300 rounded"
+                />
+                <label htmlFor="featured" className="text-sm font-medium text-charcoal">
+                  ⭐ Mark as Featured
+                </label>
+              </div>
             </div>
           </div>
 
@@ -571,6 +589,11 @@ function AdminContent() {
                   className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105" 
                 />
                 <div className="absolute top-3 right-3 flex flex-col gap-1">
+                  {p.featured && (
+                    <span className="bg-yellow-400 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      ⭐ Featured
+                    </span>
+                  )}
                   <span className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-blush-600">
                     {p.category}
                   </span>
@@ -650,6 +673,8 @@ function AdminContent() {
             </div>
           )}
         </div>
+
+        {/* Featured modal removed — feature toggle moved into main edit form */}
 
         {/* User Management Section - SuperAdmin Only */}
         {canManageUsers() && (
