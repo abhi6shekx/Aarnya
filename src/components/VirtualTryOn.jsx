@@ -285,14 +285,38 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
         const productToUse = initialProduct || localProduct
         if (useFaceMesh && productToUse?.category === 'earrings') {
             try {
-            const mp = await import('@mediapipe/face_mesh')
-            const camUtil = await import('@mediapipe/camera_utils')
-            const FaceMeshClass = mp.FaceMesh
-            const CameraClass = camUtil.Camera
+                // Load MediaPipe FaceMesh and CameraUtils from CDN to avoid bundler url(...) issues
+                // (Vite + ESM dynamic import can break Mediapipe's internal url handling when bundled)
+                const loadScript = (src) => new Promise((resolve, reject) => {
+                  // If script already present, resolve immediately
+                  if (document.querySelector(`script[src="${src}"]`)) return resolve()
+                  const s = document.createElement('script')
+                  s.src = src
+                  s.async = true
+                  s.onload = () => resolve()
+                  s.onerror = (e) => reject(new Error(`Failed to load script: ${src}`))
+                  document.body.appendChild(s)
+                })
 
-            const faceMesh = new FaceMeshClass({
-              locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-            })
+                try {
+                  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js')
+                  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js')
+                } catch (loadErr) {
+                  safeWarn('Failed to load MediaPipe scripts from CDN', loadErr)
+                  throw loadErr
+                }
+
+                // MediaPipe exposes constructors on window when loaded from CDN
+                const FaceMeshClass = window.FaceMesh
+                const CameraClass = window.Camera
+
+                if (!FaceMeshClass || !CameraClass) {
+                  throw new Error('MediaPipe classes not found on window after script load')
+                }
+
+                const faceMesh = new FaceMeshClass({
+                  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+                })
 
             faceMesh.setOptions({
               maxNumFaces: 1,
