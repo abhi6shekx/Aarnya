@@ -14,6 +14,7 @@ import Profile from './pages/Profile'
 import Addresses from './pages/adresses'
 import Orders from './pages/Orders'
 import VirtualTryOn from './components/VirtualTryOn'
+import Wishlist from './pages/Wishlist'
 import { AuthProvider } from './context/AuthContext'
 
 const router = createBrowserRouter([
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
       {
         path: "cart",
         element: <Cart />
+      },
+      {
+        path: "wishlist",
+        element: <Wishlist />
       },
       {
         path: "checkout",

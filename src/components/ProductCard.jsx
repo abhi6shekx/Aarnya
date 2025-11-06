@@ -3,6 +3,16 @@ import { formatINR } from '../lib/currency'
 import { GENDER_ICONS, CATEGORY_ICONS } from '../lib/categories'
 import { doc, updateDoc, increment } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { useEffect, useState } from 'react'
+import { useAuthContext } from '../context/AuthContext'
+import {
+  getLocalWishlist,
+  isInLocalWishlist,
+  addToLocalWishlist,
+  removeFromLocalWishlist,
+  addToUserWishlist,
+  removeFromUserWishlist
+} from '../lib/wishlist'
 
 // Function to increment product popularity count
 async function incrementProductAddCount(productId) {
@@ -37,6 +47,18 @@ function PopularityBadge({ addCount, purchaseCount }) {
 
 export default function ProductCard({ p }) {
   const navigate = useNavigate()
+  const { user } = useAuthContext()
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (user && user.uid) {
+      // If user is logged in, check their wishlist via local cache (we read localStorage for now)
+      // For simplicity, prefer localStorage check to avoid an extra network call on every card render.
+      setSaved(isInLocalWishlist(p.id))
+    } else {
+      setSaved(isInLocalWishlist(p.id))
+    }
+  }, [user, p.id])
 
   const addToCart = async () => {
     // Add to cart logic
@@ -58,6 +80,45 @@ export default function ProductCard({ p }) {
 
   return (
     <div className="card p-3 hover:shadow-xl transition duration-300 transform hover:-translate-y-1 relative group">
+      {/* Wishlist heart button */}
+      <div className="absolute top-2 left-2 z-20">
+        <button
+          aria-label={saved ? 'Remove from wishlist' : 'Add to wishlist'}
+          onClick={async (e) => {
+            e.preventDefault()
+            try {
+              if (user && user.uid) {
+                if (saved) {
+                  await removeFromUserWishlist(user.uid, p.id)
+                  // also remove from local cache
+                  await removeFromLocalWishlist(p.id)
+                  setSaved(false)
+                } else {
+                  await addToUserWishlist(user.uid, p.id)
+                  await addToLocalWishlist(p.id)
+                  setSaved(true)
+                }
+              } else {
+                // guest: toggle in localStorage
+                if (isInLocalWishlist(p.id)) {
+                  await removeFromLocalWishlist(p.id)
+                  setSaved(false)
+                } else {
+                  await addToLocalWishlist(p.id)
+                  setSaved(true)
+                }
+              }
+            } catch (err) {
+              console.error('Wishlist toggle failed', err)
+            }
+          }}
+          className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-105 transition"
+        >
+          <svg className={`w-5 h-5 ${saved ? 'text-rose-500' : 'text-gray-400'}`} viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke={saved ? 'currentColor' : 'currentColor'} strokeWidth="1.5">
+            <path d="M12 21s-7-4.35-9-7.5C1.2 9.7 4 5 8 5c2.1 0 3 1.5 4 2.5C13 6.5 13.9 5 16 5c4 0 6.8 4.7 5 8.5C19 16.65 12 21 12 21z" />
+          </svg>
+        </button>
+      </div>
       <Link to={`/product/${p.id}`}>
         <div className="aspect-square overflow-hidden rounded-xl bg-gray-50 relative">
           <img
