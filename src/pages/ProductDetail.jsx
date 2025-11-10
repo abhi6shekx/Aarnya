@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { doc, getDoc, updateDoc, increment, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from 'firebase/firestore'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { doc, getDoc, updateDoc, increment, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, limit } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { formatINR } from '../lib/currency'
 import { useAuthContext } from '../context/AuthContext'
@@ -30,6 +30,7 @@ export default function ProductDetail(){
   
   // Review states
   const [reviews, setReviews] = useState([])
+  const [related, setRelated] = useState([])
   const [rating, setRating] = useState('')
   const [comment, setComment] = useState('')
   // canReview — true when the user has a delivered order containing this product
@@ -72,6 +73,78 @@ export default function ProductDetail(){
     
     fetchData()
   }, [id])
+
+  // Fetch related / recommended products
+  useEffect(() => {
+    if (!p) return
+
+    const fetchRelated = async () => {
+      try {
+        // If admin provided explicit related product IDs, fetch them first
+        if (Array.isArray(p.relatedProducts) && p.relatedProducts.length) {
+          const items = []
+          for (const prodId of p.relatedProducts.slice(0, 6)) {
+            try {
+              const s = await getDoc(doc(db, 'products', prodId))
+              if (s.exists()) items.push({ id: s.id, ...s.data() })
+            } catch (innerErr) {
+              console.warn('Failed to load related product', prodId, innerErr)
+            }
+          }
+          setRelated(items)
+          return
+        }
+
+        // Fallback: tag/category/productType-based suggestions
+        const suggestions = new Map()
+
+        // 1) Match productType
+        if (p.productType) {
+          const q = query(collection(db, 'products'), where('productType', '==', p.productType), limit(6))
+          const snap = await getDocs(q)
+          snap.docs.forEach(d => {
+            if (d.id === p.id) return
+            suggestions.set(d.id, { id: d.id, ...d.data() })
+          })
+        }
+
+        // 2) Match category (if still not enough)
+        if (suggestions.size < 4 && p.category) {
+          const q2 = query(collection(db, 'products'), where('category', '==', p.category), limit(6))
+          const snap2 = await getDocs(q2)
+          snap2.docs.forEach(d => {
+            if (d.id === p.id) return
+            if (!suggestions.has(d.id)) suggestions.set(d.id, { id: d.id, ...d.data() })
+          })
+        }
+
+        // 3) Lightweight keyword match against shortDesc (split words)
+        if (suggestions.size < 4 && p.shortDesc) {
+          const kws = p.shortDesc.split(/\s+/).slice(0, 5).map(w => w.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()).filter(Boolean)
+          if (kws.length) {
+            // naive approach: fetch some candidates and filter client-side
+            const q3 = query(collection(db, 'products'), limit(20))
+            const snap3 = await getDocs(q3)
+            snap3.docs.forEach(d => {
+              if (d.id === p.id) return
+              if (suggestions.size >= 6) return
+              const data = d.data()
+              const hay = ((data.shortDesc || '') + ' ' + (data.name || '')).toLowerCase()
+              if (kws.some(k => hay.includes(k))) {
+                if (!suggestions.has(d.id)) suggestions.set(d.id, { id: d.id, ...data })
+              }
+            })
+          }
+        }
+
+        setRelated(Array.from(suggestions.values()).slice(0, 6))
+      } catch (err) {
+        console.error('Error loading related products:', err)
+      }
+    }
+
+    fetchRelated()
+  }, [p])
 
   // Close modal on Escape
   useEffect(() => {
@@ -303,20 +376,13 @@ export default function ProductDetail(){
     )
   }
 
+  // Normalize product description fields into a single variable so both
+  // desktop and modal views render the same content. This runs after the
+  // early-return guards above (loading/error/not-found), so `p` is available.
+  const productDescription = p.fullDesc || p.fullDescription || p.description || p.desc || p.shortDesc || ''
+
   return (
     <div className="container-base py-8">
-      {/* Normalize description field names coming from Firestore/admin */}
-      {/**
-       * Firestore product documents may use different keys depending on how they were
-       * created: `fullDesc` (admin), `fullDescription` (some imports), `description` or `desc`.
-       * Normalize into `productDescription` so the UI always picks the available one.
-       */}
-      {(() => {})()}
-      
-      {/* Compute a normalized description variable */}
-      {(() => {
-        // defensive - p should exist here because of earlier guards, but keep safe
-      })()}
       <div className="grid md:grid-cols-2 gap-8">
         {/* Main product image with hover overlay (group) */}
         <div className="relative group w-fit mx-auto">
@@ -355,15 +421,12 @@ export default function ProductDetail(){
         <div>
           <h1 className="h1 mb-2">{p.name}</h1>
           {/* Product Description (render only if available) */}
-          {(() => {
-            const productDescription = p.fullDesc || p.fullDescription || p.description || p.desc || p.shortDesc || ''
-            return productDescription ? (
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
-                <p className="text-gray-600 leading-relaxed">{productDescription}</p>
-              </div>
-            ) : null
-          })()}
+          {productDescription && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
+              <p className="text-gray-600 leading-relaxed whitespace-pre-line">{productDescription}</p>
+            </div>
+          )}
           {/* Additional Details Section: maps Firestore fields (weight, size, material, care) */}
           <div className="mt-6 border-t border-pink-100 pt-4">
             <button
@@ -393,6 +456,24 @@ export default function ProductDetail(){
               </div>
             )}
           </div>
+          
+            {/* Related products / cross-sell: "Complete the look" */}
+            {related && related.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3">Complete the look</h3>
+                <div className="flex gap-4 overflow-x-auto pb-2">
+                  {related.map(r => (
+                    <Link key={r.id} to={`/product/${r.id}`} className="w-40 flex-shrink-0 bg-white border rounded-lg p-3 hover:shadow-md transition">
+                      <div className="w-full h-24 mb-2 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                        <img src={(r.images && r.images[0]?.url) || r.imageUrl || 'https://via.placeholder.com/150'} alt={r.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="text-sm font-medium text-charcoal line-clamp-2">{r.name}</div>
+                      <div className="text-sm text-rose-600 font-semibold">{formatINR(r.price)}</div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           {/* Price (moved closer to title/description for visibility) */}
           <p className="font-bold text-lg mb-4">{formatINR(p.price)}</p>
           
@@ -526,8 +607,10 @@ export default function ProductDetail(){
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">{p.name}</h2>
-                  {/* Keep the product description visible inside the modal too */}
-                  <p className="text-gray-700 mt-1 leading-relaxed mb-4">{p.description || p.desc}</p>
+                  {/* Keep the product description visible inside the modal too (use normalized value) */}
+                  {productDescription && (
+                    <p className="text-gray-700 mt-1 leading-relaxed mb-4 whitespace-pre-line">{productDescription}</p>
+                  )}
                 </div>
                 <button onClick={() => { setShowImageModal(false); setCurrentImageIndex(0) }} aria-label="Close" className="ml-4 text-gray-500 hover:text-gray-700">✕</button>
               </div>
