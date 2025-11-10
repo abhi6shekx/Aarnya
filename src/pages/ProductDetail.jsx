@@ -344,7 +344,10 @@ export default function ProductDetail(){
           <h1 className="h1 mb-2">{p.name}</h1>
           {/* Product Description (render only if available) */}
           {(p.description || p.desc) && (
-            <p className="text-gray-700 mt-3 leading-relaxed mb-4">{p.description || p.desc}</p>
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
+              <p className="text-gray-600 leading-relaxed">{p.description || p.desc}</p>
+            </div>
           )}
           {/* Additional Details Section: maps Firestore fields (weight, size, material, care) */}
           <div className="mt-6 border-t border-pink-100 pt-4">
@@ -375,6 +378,7 @@ export default function ProductDetail(){
               </div>
             )}
           </div>
+          {/* Price (moved closer to title/description for visibility) */}
           <p className="font-bold text-lg mb-4">{formatINR(p.price)}</p>
           
           {/* Product rating summary */}
