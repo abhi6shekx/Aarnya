@@ -561,8 +561,8 @@ export default function ProductDetail(){
       {showImageModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => { setShowImageModal(false); setCurrentImageIndex(0) }} />
-          <div className="relative z-10 max-w-5xl w-full mx-4 bg-white rounded-2xl shadow-xl overflow-hidden flex">
-            <div className="w-1/2 bg-black relative flex flex-col">
+          <div className="relative z-10 max-w-5xl w-full mx-4 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+            <div className="w-full md:w-1/2 bg-black relative flex flex-col">
               {/* Prev button */}
               <button
                 onClick={() => setCurrentImageIndex(i => Math.max(0, i - 1))}
@@ -606,7 +606,7 @@ export default function ProductDetail(){
               )}
             </div>
 
-            <div className="w-1/2 p-6 flex flex-col">
+            <div className="w-full md:w-1/2 p-6 flex flex-col">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">{p.name}</h2>

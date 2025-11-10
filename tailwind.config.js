@@ -2,7 +2,8 @@
 export default {
   content: [
     './index.html',
-    './src/**/*.{js,jsx}',
+    // include all common JS/TS React file extensions to avoid accidental purging
+    './src/**/*.{js,jsx,ts,tsx}',
   ],
   theme: {
     extend: {

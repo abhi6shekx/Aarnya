@@ -124,7 +124,7 @@ export default function Home() {
                     <img
                       src={heroSrc}
                       alt="Aarnya favicon"
-                      className="w-64 h-64 sm:w-80 sm:h-80 md:w-[48rem] md:h-[48rem] p-6 object-contain"
+                      className="w-full h-full object-contain p-6"
                       loading="eager"
                       onError={() => { if (heroSrc !== '/logo.svg') setHeroSrc('/logo.svg') }}
                     />
