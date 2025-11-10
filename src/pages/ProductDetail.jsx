@@ -388,30 +388,32 @@ export default function ProductDetail(){
         <div className="w-full md:w-1/2 flex flex-col items-center md:items-stretch">
           {/* Main product image with hover overlay (group) */}
           <div className="relative group w-full md:w-auto">
-          <div
-            className="aspect-square rounded-2xl overflow-hidden bg-smoke cursor-pointer"
-            role="button"
-            tabIndex={0}
-            onClick={() => setShowImageModal(true)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowImageModal(true) }}
-          >
-            <img
-              src={p.images?.[0]?.url || p.images?.[0] || p.imageUrl || 'https://via.placeholder.com/400x400?text=No+Image'}
-              alt={p.name}
-              className="w-full h-full object-cover rounded-lg shadow-md transition-transform duration-300 group-hover:scale-[1.02]"
-              onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=No+Image' }}
-            />
-          </div>
+            <div className="flex justify-center w-full">
+              <div
+                className="rounded-2xl overflow-hidden bg-smoke cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onClick={() => setShowImageModal(true)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowImageModal(true) }}
+              >
+                <img
+                  src={p.images?.[0]?.url || p.images?.[0] || p.imageUrl || 'https://via.placeholder.com/400x400?text=No+Image'}
+                  alt={p.name}
+                  className="w-[85%] sm:w-[70%] md:w-[50%] lg:w-[45%] xl:w-[40%] rounded-2xl object-contain shadow-md transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=No+Image' }}
+                />
+              </div>
+            </div>
 
-          <div
-            className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-center justify-center cursor-pointer"
-            onClick={() => setShowImageModal(true)}
-            aria-hidden="true"
-          >
-            <span className="text-white text-sm font-medium bg-pink-500/80 px-3 py-1 rounded-full">
-              See measurements 📏
-            </span>
-          </div>
+            <div
+              className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-center justify-center cursor-pointer"
+              onClick={() => setShowImageModal(true)}
+              aria-hidden="true"
+            >
+              <span className="text-white text-sm font-medium bg-pink-500/80 px-3 py-1 rounded-full">
+                See measurements 📏
+              </span>
+            </div>
           </div>
           {/* Fallback persistent controls below the image (visible even if overlay missing) */}
           <div className="mt-3 flex items-center gap-3">
