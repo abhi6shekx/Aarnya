@@ -20,6 +20,9 @@ async function incrementProductAddCount(productId) {
 export default function ProductDetail(){
   const { id } = useParams()
   const [p, setP] = useState(null)
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
@@ -69,6 +72,27 @@ export default function ProductDetail(){
     
     fetchData()
   }, [id])
+
+  // Close modal on Escape
+  useEffect(() => {
+    if (!showImageModal) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setShowImageModal(false)
+      if (e.key === 'ArrowLeft') setCurrentImageIndex(i => Math.max(0, i - 1))
+      if (e.key === 'ArrowRight') setCurrentImageIndex(i => {
+        const max = (p?.images?.length || 1) - 1
+        return Math.min(max, i + 1)
+      })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showImageModal, p])
+
+  // Auto-expand Additional details on initial load (applies to mobile and web)
+  // If you prefer mobile-only auto-expand, change this to check window.innerWidth
+  useEffect(() => {
+    setDetailsOpen(true)
+  }, [])
 
   // Fetch reviews for this product
   useEffect(() => {
@@ -282,19 +306,75 @@ export default function ProductDetail(){
   return (
     <div className="container-base py-8">
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="aspect-square rounded-2xl overflow-hidden bg-smoke">
-          <img 
-            src={p.images?.[0]?.url || p.images?.[0] || p.imageUrl || 'https://via.placeholder.com/400x400?text=No+Image'} 
-            alt={p.name} 
-            className="w-full h-full object-cover" 
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x400?text=No+Image'
-            }}
-          />
+        {/* Main product image with hover overlay (group) */}
+        <div className="relative group w-fit mx-auto">
+          <div
+            className="aspect-square rounded-2xl overflow-hidden bg-smoke cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onClick={() => setShowImageModal(true)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowImageModal(true) }}
+          >
+            <img
+              src={p.images?.[0]?.url || p.images?.[0] || p.imageUrl || 'https://via.placeholder.com/400x400?text=No+Image'}
+              alt={p.name}
+              className="w-full h-full object-cover rounded-lg shadow-md transition-transform duration-300 group-hover:scale-[1.02]"
+              onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=No+Image' }}
+            />
+          </div>
+
+          <div
+            className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-center justify-center cursor-pointer"
+            onClick={() => setShowImageModal(true)}
+            aria-hidden="true"
+          >
+            <span className="text-white text-sm font-medium bg-pink-500/80 px-3 py-1 rounded-full">
+              See measurements 📏
+            </span>
+          </div>
+        </div>
+        {/* Fallback persistent controls below the image (visible even if overlay missing) */}
+        <div className="mt-3 flex items-center gap-3">
+          <button onClick={() => setShowImageModal(true)} className="px-3 py-2 bg-white border rounded-full text-sm text-rose-700 shadow-sm hover:shadow-md transition">See measurements</button>
+          {p.images && p.images.length > 1 && (
+            <button onClick={() => { setCurrentImageIndex(0); setShowImageModal(true) }} className="px-3 py-2 bg-white border rounded-full text-sm text-charcoal shadow-sm hover:shadow-md transition">View all images</button>
+          )}
         </div>
         <div>
           <h1 className="h1 mb-2">{p.name}</h1>
-          <p className="text-muted mb-4">{p.desc || p.description}</p>
+          {/* Product Description (render only if available) */}
+          {(p.description || p.desc) && (
+            <p className="text-gray-700 mt-3 leading-relaxed mb-4">{p.description || p.desc}</p>
+          )}
+          {/* Additional Details Section: maps Firestore fields (weight, size, material, care) */}
+          <div className="mt-6 border-t border-pink-100 pt-4">
+            <button
+              className="text-pink-600 font-medium underline hover:text-pink-700 transition"
+              onClick={() => setDetailsOpen(!detailsOpen)}
+              aria-expanded={detailsOpen}
+            >
+              {detailsOpen ? 'Hide product details' : 'See product details'}
+            </button>
+
+            {detailsOpen && (
+              <div className="mt-4 space-y-2 text-gray-700 bg-pink-50 p-4 rounded-xl shadow-sm">
+                {/* Available sizes for rings or explicit `size` field */}
+                {p.productType === 'rings' && p.availableSizes?.length > 0 && (
+                  <p><strong>Available sizes:</strong> {p.availableSizes.join(', ')}</p>
+                )}
+
+                <p><strong>Weight:</strong> {p.weight || 'Not specified'}</p>
+
+                {/* Prefer explicit `size` field; otherwise try to derive from length/breadth/height */}
+                <p>
+                  <strong>Size:</strong> {p.size || ((p.length || p.breadth || p.height) ? `${p.length || '—'} × ${p.breadth || '—'} × ${p.height || '—'} cm` : 'Not specified')}
+                </p>
+
+                <p><strong>Material:</strong> {p.material || 'Handmade Resin'}</p>
+                <p><strong>Care Instructions:</strong> {p.care || 'Avoid water & perfume contact'}</p>
+              </div>
+            )}
+          </div>
           <p className="font-bold text-lg mb-4">{formatINR(p.price)}</p>
           
           {/* Product rating summary */}
@@ -373,6 +453,118 @@ export default function ProductDetail(){
           </div>
         </div>
       </div>
+
+      {/* Full image modal - shows image with description and details so description doesn't disappear */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => { setShowImageModal(false); setCurrentImageIndex(0) }} />
+          <div className="relative z-10 max-w-5xl w-full mx-4 bg-white rounded-2xl shadow-xl overflow-hidden flex">
+            <div className="w-1/2 bg-black relative flex flex-col">
+              {/* Prev button */}
+              <button
+                onClick={() => setCurrentImageIndex(i => Math.max(0, i - 1))}
+                disabled={currentImageIndex === 0}
+                aria-label="Previous image"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full z-20 disabled:opacity-40"
+              >
+                ◀
+              </button>
+
+              <img
+                src={p.images?.[currentImageIndex]?.url || p.images?.[0]?.url || p.imageUrl || 'https://via.placeholder.com/800x800?text=No+Image'}
+                alt={`${p.name} - image ${currentImageIndex + 1}`}
+                className="w-full h-full object-contain bg-black"
+              />
+
+              {/* Next button */}
+              <button
+                onClick={() => setCurrentImageIndex(i => Math.min((p?.images?.length || 1) - 1, i + 1))}
+                disabled={currentImageIndex >= ((p?.images?.length || 1) - 1)}
+                aria-label="Next image"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full z-20 disabled:opacity-40"
+              >
+                ▶
+              </button>
+
+              {/* Thumbnails */}
+              {p.images && p.images.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-2 z-30 px-2">
+                  {p.images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`w-12 h-12 rounded-md overflow-hidden border ${idx === currentImageIndex ? 'border-rose-400 ring-2 ring-rose-200' : 'border-white/40'}`}
+                      aria-label={`Show image ${idx + 1}`}
+                    >
+                      <img src={img?.url || img} alt={`thumb-${idx}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="w-1/2 p-6 flex flex-col">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">{p.name}</h2>
+                  {/* Keep the product description visible inside the modal too */}
+                  <p className="text-gray-700 mt-1 leading-relaxed mb-4">{p.description || p.desc}</p>
+                </div>
+                <button onClick={() => { setShowImageModal(false); setCurrentImageIndex(0) }} aria-label="Close" className="ml-4 text-gray-500 hover:text-gray-700">✕</button>
+              </div>
+
+              <div className="mt-2">
+                {/* Modal: collapsible Additional details (accessible) */}
+                <button
+                  onClick={() => setDetailsOpen(!detailsOpen)}
+                  aria-expanded={detailsOpen}
+                  className="flex items-center justify-between w-full bg-white border border-rose-100 rounded-lg px-4 py-3 text-left"
+                >
+                  <span className="font-medium">Additional details</span>
+                  <span className="text-sm text-gray-500">{detailsOpen ? 'Hide' : 'Show'}</span>
+                </button>
+
+                {detailsOpen && (
+                  <div className="mt-3 text-sm text-gray-700">
+                    {p.productType === 'rings' && p.availableSizes?.length > 0 && (
+                      <div className="mb-2">
+                        <div className="text-xs text-gray-500">Available sizes</div>
+                        <div className="mt-1">{p.availableSizes.join(', ')}</div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-xs text-gray-500">Weight (kg)</div>
+                        <div className="font-medium mt-1">{p.weight || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Dimensions (L×B×H cm)</div>
+                        <div className="font-medium mt-1">{(p.length || '—')} × {(p.breadth || '—')} × {(p.height || '—')}</div>
+                      </div>
+                    </div>
+
+                    {p.material && (
+                      <div className="mt-3">
+                        <div className="text-xs text-gray-500">Material</div>
+                        <div className="font-medium mt-1">{p.material}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-auto">
+                <p className="font-bold text-lg">{formatINR(p.price)}</p>
+                <div className="mt-3 flex gap-3">
+                  <button onClick={handleAddToCart} className="btn-primary rounded-full px-4 py-2">Add to Cart</button>
+                  <button onClick={() => { setShowImageModal(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="px-4 py-2 border rounded-lg">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Product Reviews Section */}
       <div className="mt-12 bg-rose-50 rounded-xl p-6 shadow-sm border border-rose-100">
