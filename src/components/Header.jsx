@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { getLocalWishlist, getUserWishlist } from '../lib/wishlist'
 import { useState, useRef, useEffect } from 'react'
 import CategoriesMenu from './CategoriesMenu'
 
@@ -7,6 +8,7 @@ export default function Header(){
   const { user, logout, userRole, canManageProducts, isSuperAdmin } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [wishlistCount, setWishlistCount] = useState(0)
   const menuRef = useRef(null)
   const navigate = useNavigate()
 
@@ -48,6 +50,38 @@ export default function Header(){
       document.removeEventListener('keydown', handleKey)
     }
   }, [menuRef])
+
+  // Watch wishlist changes and auth changes to update the badge count
+  useEffect(() => {
+    let mounted = true
+    const updateCount = async () => {
+      try {
+        if (user && user.uid) {
+          const ids = await getUserWishlist(user.uid)
+          if (mounted) setWishlistCount((ids || []).length)
+        } else {
+          const local = getLocalWishlist()
+          if (mounted) setWishlistCount((local || []).length)
+        }
+      } catch (e) {
+        console.warn('Failed to load wishlist count', e)
+      }
+    }
+
+    updateCount()
+
+    const handler = () => { updateCount() }
+    // custom event fired by wishlist helpers
+    window.addEventListener('wishlist:changed', handler)
+    // cross-tab/localStorage updates
+    window.addEventListener('storage', handler)
+
+    return () => {
+      mounted = false
+      window.removeEventListener('wishlist:changed', handler)
+      window.removeEventListener('storage', handler)
+    }
+  }, [user])
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-blush-200 shadow-sm">
@@ -104,6 +138,27 @@ export default function Header(){
             }
           >
             Cart
+          </NavLink>
+
+          <NavLink to="/wishlist" 
+            className={({ isActive }) =>
+              `relative px-4 py-2 rounded-full text-charcoal transition flex items-center gap-2 ${
+                isActive 
+                  ? 'bg-blush-200 text-rose-700 shadow-soft' 
+                  : 'hover:bg-blush-100 hover:text-rose-600'
+              }`
+            }
+          >
+            {/* simple heart icon */}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-rose-500">
+              <path d="M12 21s-7-4.534-9-7.071C-1.2 9.618 5.6 5 9 8.5 11 10.5 12 12 12 12s1-1.5 3-3.5C18.4 5 25.2 9.618 21 13.929 19 16.466 12 21 12 21z" />
+            </svg>
+            <span>Wishlist</span>
+            {wishlistCount > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center text-xs bg-rose-500 text-white rounded-full px-1.5 py-0.5">
+                {wishlistCount}
+              </span>
+            )}
           </NavLink>
 
           <a
@@ -170,6 +225,15 @@ export default function Header(){
                       <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                     </svg>
                     <span>My Addresses</span>
+                  </NavLink>
+
+                  <NavLink 
+                    to="/wishlist" 
+                    className="flex items-center gap-3 px-4 py-3 text-charcoal hover:bg-blush-50 transition-colors"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <span className="text-rose-500">💖</span>
+                    <span>My Wishlist</span>
                   </NavLink>
 
                   {/* Admin link in user menu for mobile/compact view - show only for explicit admin/manager/superadmin roles */}
@@ -242,6 +306,10 @@ export default function Header(){
                 <CategoriesMenu compactOnMobile={true} />
               </div>
               <NavLink to="/cart" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>Cart</NavLink>
+              <NavLink to="/wishlist" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50 flex items-center gap-2" onClick={() => setShowMobileMenu(false)}>
+                <span className="text-rose-500">💖</span>
+                Wishlist
+              </NavLink>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50">Chat on WhatsApp</a>
 
               {user ? (

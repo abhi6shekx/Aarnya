@@ -14,6 +14,12 @@ export function getLocalWishlist() {
 export function setLocalWishlist(list) {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(list))
+    // notify other parts of the app in this window/tab
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('wishlist:changed', { detail: { list } }))
+      }
+    } catch (e) { /* ignore */ }
   } catch (e) { /* ignore */ }
 }
 
@@ -56,10 +62,16 @@ export async function addToUserWishlist(uid, productId) {
   try {
     const ref = doc(db, 'users', uid)
     await updateDoc(ref, { wishlist: arrayUnion(productId) })
+    try {
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('wishlist:changed'))
+    } catch (e) { /* ignore */ }
   } catch (e) {
     // If doc doesn't exist, create it
     try {
       await setDoc(doc(db, 'users', uid), { wishlist: [productId] }, { merge: true })
+      try {
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('wishlist:changed'))
+      } catch (err2) { /* ignore */ }
     } catch (err) {
       console.error('addToUserWishlist failed', err)
     }
@@ -70,6 +82,9 @@ export async function removeFromUserWishlist(uid, productId) {
   try {
     const ref = doc(db, 'users', uid)
     await updateDoc(ref, { wishlist: arrayRemove(productId) })
+    try {
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('wishlist:changed'))
+    } catch (e) { /* ignore */ }
   } catch (e) {
     console.error('removeFromUserWishlist failed', e)
   }
