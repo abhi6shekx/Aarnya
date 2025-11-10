@@ -13,7 +13,8 @@ html, body {
    CONTAINER
 =========================== */
 .container-base {
-  @apply max-w-6xl mx-auto px-4;
+  /* Responsive global container: centered with sensible max-width and responsive padding */
+  @apply max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-8;
 }
 
 /* ===========================

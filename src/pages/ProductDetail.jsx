@@ -383,9 +383,11 @@ export default function ProductDetail(){
 
   return (
     <div className="container-base py-8">
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Main product image with hover overlay (group) */}
-        <div className="relative group w-fit mx-auto">
+      <div className="flex flex-col md:flex-row justify-center gap-8 px-4 md:px-12">
+        {/* Main column: image + controls */}
+        <div className="w-full md:w-1/2 flex flex-col items-center md:items-stretch">
+          {/* Main product image with hover overlay (group) */}
+          <div className="relative group w-full md:w-auto">
           <div
             className="aspect-square rounded-2xl overflow-hidden bg-smoke cursor-pointer"
             role="button"
@@ -410,15 +412,16 @@ export default function ProductDetail(){
               See measurements 📏
             </span>
           </div>
-        </div>
-        {/* Fallback persistent controls below the image (visible even if overlay missing) */}
-        <div className="mt-3 flex items-center gap-3">
+          </div>
+          {/* Fallback persistent controls below the image (visible even if overlay missing) */}
+          <div className="mt-3 flex items-center gap-3">
           <button onClick={() => setShowImageModal(true)} className="px-3 py-2 bg-white border rounded-full text-sm text-rose-700 shadow-sm hover:shadow-md transition">See measurements</button>
           {p.images && p.images.length > 1 && (
             <button onClick={() => { setCurrentImageIndex(0); setShowImageModal(true) }} className="px-3 py-2 bg-white border rounded-full text-sm text-charcoal shadow-sm hover:shadow-md transition">View all images</button>
           )}
+          </div>
         </div>
-        <div>
+        <div className="w-full md:w-1/2 mt-6 md:mt-0">
           <h1 className="h1 mb-2">{p.name}</h1>
           {/* Product Description (render only if available) */}
           {productDescription && (
