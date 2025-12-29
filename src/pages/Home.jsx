@@ -124,17 +124,17 @@ export default function Home() {
                     <img
                       src={heroSrc}
                       alt="Aarnya favicon"
-                      className="w-full h-full object-contain p-6"
+                      className="w-64 h-64 sm:w-80 sm:h-80 md:w-[48rem] md:h-[48rem] p-6 object-contain"
                       loading="eager"
                       onError={() => { if (heroSrc !== '/logo.svg') setHeroSrc('/logo.svg') }}
                     />
                   </div>
                 </div>
                 {/* Floating elements */}
-                <div className="absolute -top-4 -right-4 w-16 sm:w-24 h-16 sm:h-24 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
+                <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
                   <span className="text-2xl">💎</span>
                 </div>
-                <div className="absolute -bottom-4 -left-4 w-14 sm:w-20 h-14 sm:h-20 bg-rose-100/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
+                <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-rose-100/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
                   <span className="text-xl">✨</span>
                 </div>
               </div>

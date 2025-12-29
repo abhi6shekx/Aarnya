@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthContext } from '../context/AuthContext'
-import { getLocalWishlist, getUserWishlist, addToUserWishlist } from '../lib/wishlist'
+import { getLocalWishlist } from '../lib/wishlist'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import ProductCard from '../components/ProductCard'
@@ -16,28 +16,10 @@ export default function Wishlist() {
     const load = async () => {
       setLoading(true)
       try {
-        // Start with local ids (guest flow / cached)
-        const localIds = getLocalWishlist() || []
-
-        // If user is logged in, prefer server wishlist. Also merge any local items into the server wishlist.
-        let ids = localIds
+        const ids = getLocalWishlist()
         if (user && user.uid) {
-          const serverIds = await getUserWishlist(user.uid)
-          // Merge serverIds and localIds (preserve order: server first, then new local items)
-          const merged = Array.from(new Set([...(serverIds || []), ...(localIds || [])]))
-
-          // If there are local ids not present on server, add them to server for persistence
-          const toAdd = (localIds || []).filter(id => !(serverIds || []).includes(id))
-          if (toAdd.length) {
-            // fire-and-forget individual adds to avoid a large single update; helper will create user doc if missing
-            try {
-              await Promise.all(toAdd.map(id => addToUserWishlist(user.uid, id)))
-            } catch (e) {
-              console.warn('Failed to merge local wishlist into user wishlist', e)
-            }
-          }
-
-          ids = merged
+          // prefer local cache (we maintain local wishlist in localStorage on toggle)
+          // For stronger consistency, you could fetch from Firestore here.
         }
 
         if (!ids || ids.length === 0) {

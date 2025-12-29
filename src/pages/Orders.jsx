@@ -70,8 +70,8 @@ const Orders = () => {
 
             {orders.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-20 h-20 mx-auto mb-6 bg-blush-100 rounded-full flex items-center justify-center">
-                  <svg className="w-10 h-10 text-blush-400" fill="currentColor" viewBox="0 0 20 20">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 bg-blush-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-blush-400" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>

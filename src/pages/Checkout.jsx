@@ -393,7 +393,7 @@ export default function Checkout(){
             <div className="text-sm">{a.city}, {a.state} - {a.pincode}</div>
           </label>
         ))}
-        {/* '+ Add new address' removed: customers must choose from saved addresses only */}
+        <a href="/addresses" className="btn-outline rounded-full px-5 py-2">+ Add new address</a>
       </div>
 
       <div className="card p-6 space-y-4">

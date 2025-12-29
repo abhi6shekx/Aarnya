@@ -549,7 +549,7 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
               autoPlay
               playsInline
               muted
-              className="w-full h-auto max-h-[70vh] object-cover transform scale-x-[-1]" // Mirror effect; responsive height
+              className="w-full h-96 object-cover transform scale-x-[-1]" // Mirror effect
             />
 
             {/* Spinner overlay while initializing */}
