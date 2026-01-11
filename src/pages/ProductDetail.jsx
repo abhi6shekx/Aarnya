@@ -133,7 +133,7 @@ export default function ProductDetail() {
             <img
               src={p.images?.[0]?.url || p.imageUrl || '/logo.svg'}
               alt={p.name}
-              className="w-full h-[40vh] md:h-auto md:aspect-square object-cover rounded-xl"
+              className="w-full aspect-square object-cover rounded-xl"
               onClick={() => setShowImageModal(true)}
             />
 
