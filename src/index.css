@@ -74,7 +74,7 @@ button:focus-visible {
 /* Product Detail Page Specific Styles */
 .product-page .product-image-wrapper {
   width: 100%;
-  max-width: 280px;
+  max-width: 260px; /* mobile */
   aspect-ratio: 1 / 1;
   background-color: #f9fafb;
   border-radius: 0.75rem;
@@ -90,10 +90,16 @@ button:focus-visible {
   object-fit: contain;
 }
 
-/* Tablet & Desktop - Larger Image */
+/* Tablet & Desktop - Larger Image with fixed width for dominance */
 @media (min-width: 768px) {
   .product-page .product-image-wrapper {
     max-width: 420px;
+    width: 420px;
+  }
+  
+  /* Premium spacing between image and details */
+  .product-page > div > div:first-child {
+    gap: 3rem;
   }
 }
 
@@ -101,5 +107,6 @@ button:focus-visible {
 @media (min-width: 1024px) {
   .product-page .product-image-wrapper {
     max-width: 480px;
+    width: 480px;
   }
 }
