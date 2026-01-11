@@ -129,13 +129,15 @@ export default function ProductDetail() {
         <div className="flex flex-col md:flex-row gap-8">
 
           {/* IMAGE */}
-          <div className="w-full md:w-1/2 flex justify-center md:justify-start">
-            <img
-              src={p.images?.[0]?.url || p.imageUrl || '/logo.svg'}
-              alt={p.name}
-              className="w-full md:w-full max-h-[45vh] md:max-h-none object-contain rounded-xl"
-              onClick={() => setShowImageModal(true)}
-            />
+          <div className="w-full md:w-1/2">
+            <div className="w-full h-[300px] md:h-auto md:aspect-square bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center">
+              <img
+                src={p.images?.[0]?.url || p.imageUrl || '/logo.svg'}
+                alt={p.name}
+                className="w-full h-full object-contain cursor-pointer"
+                onClick={() => setShowImageModal(true)}
+              />
+            </div>
 
             <button
               onClick={() => setShowImageModal(true)}
