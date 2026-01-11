@@ -130,7 +130,7 @@ export default function ProductDetail() {
 
           {/* IMAGE */}
           <div className="w-full md:w-1/2">
-            <div className="w-full h-[300px] md:h-auto md:aspect-square bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center">
+            <div className="w-full h-[250px] md:h-auto md:aspect-square bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center">
               <img
                 src={p.images?.[0]?.url || p.imageUrl || '/logo.svg'}
                 alt={p.name}
