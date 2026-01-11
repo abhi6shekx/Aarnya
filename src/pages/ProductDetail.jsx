@@ -123,18 +123,18 @@ export default function ProductDetail() {
   }
 
   return (
-    <div className="bg-white">
+    <div className="product-page bg-white">
       <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
         {/* MAIN LAYOUT */}
         <div className="flex flex-col md:flex-row gap-8">
 
           {/* IMAGE */}
-          <div className="w-full md:w-1/2">
-            <div className="w-full aspect-square bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center max-h-[280px] md:max-h-none">
+          <div className="w-full md:w-1/2 flex justify-center md:justify-start">
+            <div className="product-image-wrapper">
               <img
                 src={p.images?.[0]?.url || p.imageUrl || '/logo.svg'}
                 alt={p.name}
-                className="w-full h-full object-contain cursor-pointer"
+                className="product-image object-contain cursor-pointer rounded-xl"
                 onClick={() => setShowImageModal(true)}
               />
             </div>
