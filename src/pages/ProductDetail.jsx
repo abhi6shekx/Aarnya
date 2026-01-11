@@ -129,11 +129,11 @@ export default function ProductDetail() {
         <div className="flex flex-col md:flex-row gap-8">
 
           {/* IMAGE */}
-          <div className="w-full md:w-1/2">
+          <div className="w-full md:w-1/2 flex justify-center md:justify-start">
             <img
               src={p.images?.[0]?.url || p.imageUrl || '/logo.svg'}
               alt={p.name}
-              className="w-full aspect-square object-cover rounded-xl"
+              className="w-4/5 md:w-full aspect-square object-cover rounded-xl max-h-[60vh] md:max-h-none"
               onClick={() => setShowImageModal(true)}
             />
 
