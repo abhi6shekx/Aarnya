@@ -314,17 +314,28 @@ export default function ProductDetail(){
 
   const handleAddToCart = async () => {
     try {
-      // Add to cart logic
+      // Add to cart logic - check if product already exists
       const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-      cart.push({
-        ...p,
-        // Ensure shipping measurements are present in cart for rate calculation
-        weight: p?.weight ?? 0,
-        length: p?.length ?? 0,
-        breadth: p?.breadth ?? 0,
-        height: p?.height ?? 0,
-        qty: 1
-      })
+      
+      // Check if product already exists in cart
+      const existingIndex = cart.findIndex(item => item.id === p.id)
+      
+      if (existingIndex !== -1) {
+        // Product exists, increase quantity
+        cart[existingIndex].qty = (cart[existingIndex].qty || 1) + 1
+      } else {
+        // New product, add to cart
+        cart.push({
+          ...p,
+          // Ensure shipping measurements are present in cart for rate calculation
+          weight: p?.weight ?? 0,
+          length: p?.length ?? 0,
+          breadth: p?.breadth ?? 0,
+          height: p?.height ?? 0,
+          qty: 1
+        })
+      }
+      
       localStorage.setItem('cart', JSON.stringify(cart))
       
       // Update popularity count in Firestore

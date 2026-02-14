@@ -50,6 +50,19 @@ export default function Cart(){
     localStorage.setItem('cart', JSON.stringify(updated))
   }
 
+  // Update quantity
+  const updateQty = (id, delta) => {
+    const updated = cart.map(p => {
+      if (p.id === id) {
+        const newQty = Math.max(1, (p.qty || 1) + delta)
+        return { ...p, qty: newQty }
+      }
+      return p
+    })
+    setCart(updated)
+    localStorage.setItem('cart', JSON.stringify(updated))
+  }
+
   // Save (or move) item to wishlist
   const saveToWishlist = async (id) => {
     try {
@@ -76,7 +89,7 @@ export default function Cart(){
       <h1 className="h1 mb-4">Your Cart</h1>
 
       {cart.length ? cart.map(p => (
-        <div key={p.id} className="card p-4 flex justify-between items-center">
+        <div key={p.id} className="card p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <img
               src={p.images?.[0]?.url || p.images?.[0] || p.imageUrl || 'https://via.placeholder.com/160?text=No+Image'}
@@ -85,19 +98,41 @@ export default function Cart(){
             />
             <div>
               <p className="font-medium">{p.name}</p>
-              <p>{formatINR(p.price)}</p>
+              <p className="text-rose-600">{formatINR(p.price)}</p>
+              <p className="text-sm text-gray-500">Subtotal: {formatINR(p.price * (p.qty || 1))}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            {savedIds.includes(p.id) ? (
-              <span className="text-sm text-green-600">Saved ✓</span>
-            ) : (
-              <button onClick={() => saveToWishlist(p.id)} className="text-sm text-rose-700">Save to wishlist</button>
-            )}
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+            {/* Quantity Controls */}
+            <div className="flex items-center gap-2 bg-gray-100 rounded-full px-2 py-1">
+              <button 
+                onClick={() => updateQty(p.id, -1)} 
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow hover:bg-gray-50 text-lg font-medium"
+                disabled={p.qty <= 1}
+              >
+                −
+              </button>
+              <span className="w-8 text-center font-medium">{p.qty || 1}</span>
+              <button 
+                onClick={() => updateQty(p.id, 1)} 
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow hover:bg-gray-50 text-lg font-medium"
+              >
+                +
+              </button>
+            </div>
 
-            <button onClick={() => moveToWishlist(p.id)} className="text-sm text-rose-600">Move to wishlist</button>
+            <div className="flex items-center gap-3">
+              {savedIds.includes(p.id) ? (
+                <span className="text-sm text-green-600">Saved ✓</span>
+              ) : (
+                <button onClick={() => saveToWishlist(p.id)} className="text-sm text-rose-700 hover:underline">Save</button>
+              )}
 
-            <button onClick={() => remove(p.id)} className="text-sm text-red-500">Remove</button>
+              <button onClick={() => moveToWishlist(p.id)} className="text-sm text-rose-600 hover:underline">Move to wishlist</button>
+
+              <button onClick={() => remove(p.id)} className="text-sm text-red-500 hover:underline">Remove</button>
+            </div>
           </div>
         </div>
       )) : <p>Your cart is empty.</p>}
