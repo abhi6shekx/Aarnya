@@ -63,6 +63,14 @@ export default function Cart(){
     localStorage.setItem('cart', JSON.stringify(updated))
   }
 
+  // Clear entire cart
+  const clearCart = () => {
+    if (window.confirm('Are you sure you want to clear your cart?')) {
+      setCart([])
+      localStorage.removeItem('cart')
+    }
+  }
+
   // Save (or move) item to wishlist
   const saveToWishlist = async (id) => {
     try {
@@ -86,7 +94,17 @@ export default function Cart(){
 
   return (
     <div className="space-y-4">
-      <h1 className="h1 mb-4">Your Cart</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="h1">Your Cart</h1>
+        {cart.length > 0 && (
+          <button 
+            onClick={clearCart} 
+            className="text-sm text-red-500 hover:text-red-700 hover:underline"
+          >
+            🗑️ Clear Cart
+          </button>
+        )}
+      </div>
 
       {cart.length ? cart.map(p => (
         <div key={p.id} className="card p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
