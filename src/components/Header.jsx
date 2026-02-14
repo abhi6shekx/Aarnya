@@ -9,6 +9,7 @@ export default function Header(){
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [wishlistCount, setWishlistCount] = useState(0)
+  const [cartCount, setCartCount] = useState(0)
   const menuRef = useRef(null)
   const navigate = useNavigate()
 
@@ -83,6 +84,37 @@ export default function Header(){
     }
   }, [user])
 
+  // Watch cart changes to update the badge count
+  useEffect(() => {
+    const updateCartCount = () => {
+      try {
+        const cart = JSON.parse(localStorage.getItem('cart') || '[]')
+        const totalItems = cart.reduce((sum, item) => sum + (item.qty || 1), 0)
+        setCartCount(totalItems)
+      } catch (e) {
+        console.warn('Failed to load cart count', e)
+        setCartCount(0)
+      }
+    }
+
+    updateCartCount()
+
+    // Listen for storage changes (cross-tab and same-tab updates)
+    window.addEventListener('storage', updateCartCount)
+    
+    // Custom event for cart updates
+    window.addEventListener('cart:changed', updateCartCount)
+
+    // Poll for changes (backup for same-tab updates)
+    const interval = setInterval(updateCartCount, 1000)
+
+    return () => {
+      window.removeEventListener('storage', updateCartCount)
+      window.removeEventListener('cart:changed', updateCartCount)
+      clearInterval(interval)
+    }
+  }, [])
+
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-blush-200 shadow-sm">
       <div className="container-base flex items-center justify-between h-20 px-4 sm:px-6 md:px-12">
@@ -130,7 +162,7 @@ export default function Header(){
 
           <NavLink to="/cart" 
             className={({ isActive }) =>
-              `relative px-4 py-2 rounded-full text-charcoal transition ${
+              `relative px-4 py-2 rounded-full text-charcoal transition flex items-center gap-2 ${
                 isActive 
                   ? 'bg-blush-200 text-rose-700 shadow-soft' 
                   : 'hover:bg-blush-100 hover:text-rose-600'
@@ -138,6 +170,11 @@ export default function Header(){
             }
           >
             Cart
+            {cartCount > 0 && (
+              <span className="inline-flex items-center justify-center text-xs bg-rose-500 text-white rounded-full min-w-[20px] h-5 px-1">
+                {cartCount}
+              </span>
+            )}
           </NavLink>
 
           <NavLink to="/wishlist" 
@@ -305,7 +342,14 @@ export default function Header(){
                 {/* Keep the categories component visible in mobile as-is if it supports touch */}
                 <CategoriesMenu compactOnMobile={true} />
               </div>
-              <NavLink to="/cart" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>Cart</NavLink>
+              <NavLink to="/cart" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50 flex items-center gap-2" onClick={() => setShowMobileMenu(false)}>
+                Cart
+                {cartCount > 0 && (
+                  <span className="inline-flex items-center justify-center text-xs bg-rose-500 text-white rounded-full min-w-[20px] h-5 px-1">
+                    {cartCount}
+                  </span>
+                )}
+              </NavLink>
               <NavLink to="/wishlist" className="px-3 py-2 rounded-md text-charcoal hover:bg-blush-50 flex items-center gap-2" onClick={() => setShowMobileMenu(false)}>
                 <span className="text-rose-500">💖</span>
                 Wishlist
