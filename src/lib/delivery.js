@@ -32,15 +32,34 @@ export async function getDeliveryEstimate(pincode, products = [], speed = 'stand
 
       if (res.ok) {
         const data = await res.json()
-        // Shiprocket cloud function mirrors Shiprocket response shape
-        const courier = data.data?.[0] || data.data?.available_courier_companies?.[0] || null
-        if (courier) {
-          const fee = courier.rate?.amount || courier.rate || courier.courier_charge || courier.delivery_charges || 0
+  // console.log('Shiprocket Response:', data) // Debug log
+        
+        // Parse Shiprocket response correctly
+        const couriers = data.data?.available_courier_companies || []
+        if (couriers.length > 0) {
+          // Find the cheapest courier for standard, or fastest for express
+          let selectedCourier
+          if (speed === 'express') {
+            // For express, prefer couriers with "Express" or "Air" in name
+            selectedCourier = couriers.find(c => 
+              c.courier_name?.toLowerCase().includes('express') || 
+              c.courier_name?.toLowerCase().includes('air')
+            ) || couriers[0]
+          } else {
+            // For standard, get the cheapest
+            selectedCourier = couriers.reduce((cheapest, current) => {
+              const currentRate = current.freight_charge || current.rate || 0
+              const cheapestRate = cheapest.freight_charge || cheapest.rate || 0
+              return currentRate < cheapestRate ? current : cheapest
+            })
+          }
+          
+          const fee = selectedCourier.freight_charge || selectedCourier.rate || 0
           return {
             success: true,
             fee: Math.round(fee),
-            mode: courier.name || courier.service || speed,
-            eta: courier.eta || courier.etd || `${speed === 'express' ? '2-3' : '5-7'} days`,
+            mode: selectedCourier.courier_name || selectedCourier.name || speed,
+            eta: selectedCourier.etd || `${speed === 'express' ? '2-3' : '5-7'} days`,
             raw: data
           }
         }
@@ -81,14 +100,16 @@ function estimateDistanceFromPin(srcPin, dstPin) {
   return 50 // default 50km
 }
 
-// Simple local pricing algorithm
+// Simple local pricing algorithm (fallback when carrier quote isn't available)
 function estimateDeliveryCharge(weightKg, distanceKm, speed) {
   const base = speed === 'express' ? 120 : 60
-  const perKm = 0.2 // rupees per km
-  const perKg = 40 // rupees per kg
-  const w = Math.max(0.1, weightKg)
-  const fee = Math.round(base + distanceKm * perKm + w * perKg)
-  return fee
+  const perKg = speed === 'express' ? 80 : 40
+  const distanceSurcharge = Math.round(Math.max(0, distanceKm - 50) * (speed === 'express' ? 0.25 : 0.15))
+
+  const extraWeight = Math.max(0, (Number(weightKg) || 0) - 0.5)
+  const weightCharge = Math.round(extraWeight * perKg)
+
+  return Math.max(0, Math.round(base + weightCharge + distanceSurcharge))
 }
 
 export default {

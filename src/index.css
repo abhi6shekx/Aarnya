@@ -66,3 +66,28 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.container-base {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .container-base {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+h1 {
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+}
+

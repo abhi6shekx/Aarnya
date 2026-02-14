@@ -189,3 +189,24 @@ nav a:hover::after {
 .animate-heart-pop-reverse {
   animation: heartPopReverse 360ms cubic-bezier(.2,.9,.3,1) both;
 }
+
+.container-base {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .container-base {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}

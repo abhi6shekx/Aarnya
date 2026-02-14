@@ -64,7 +64,15 @@ export default function ProductCard({ p }) {
   const addToCart = async () => {
     // Add to cart logic
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    cart.push({ ...p, qty: 1 })
+    cart.push({
+      ...p,
+      // Ensure shipping measurements are present in cart for rate calculation
+      weight: p?.weight ?? 0,
+      length: p?.length ?? 0,
+      breadth: p?.breadth ?? 0,
+      height: p?.height ?? 0,
+      qty: 1
+    })
     localStorage.setItem('cart', JSON.stringify(cart))
     
     // Update popularity count in Firestore

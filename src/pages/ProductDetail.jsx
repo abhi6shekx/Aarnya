@@ -316,7 +316,15 @@ export default function ProductDetail(){
     try {
       // Add to cart logic
       const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-      cart.push({ ...p, qty: 1 })
+      cart.push({
+        ...p,
+        // Ensure shipping measurements are present in cart for rate calculation
+        weight: p?.weight ?? 0,
+        length: p?.length ?? 0,
+        breadth: p?.breadth ?? 0,
+        height: p?.height ?? 0,
+        qty: 1
+      })
       localStorage.setItem('cart', JSON.stringify(cart))
       
       // Update popularity count in Firestore
@@ -404,9 +412,20 @@ export default function ProductDetail(){
                 />
               </div>
             </div>
+
+            <div
+              className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-center justify-center cursor-pointer"
+              onClick={() => setShowImageModal(true)}
+              aria-hidden="true"
+            >
+              <span className="text-white text-sm font-medium bg-pink-500/80 px-3 py-1 rounded-full">
+                See measurements 📏
+              </span>
+            </div>
           </div>
           {/* Fallback persistent controls below the image (visible even if overlay missing) */}
           <div className="mt-3 flex items-center gap-3">
+          <button onClick={() => setShowImageModal(true)} className="px-3 py-2 bg-white border rounded-full text-sm text-rose-700 shadow-sm hover:shadow-md transition">See measurements</button>
           {p.images && p.images.length > 1 && (
             <button onClick={() => { setCurrentImageIndex(0); setShowImageModal(true) }} className="px-3 py-2 bg-white border rounded-full text-sm text-charcoal shadow-sm hover:shadow-md transition">View all images</button>
           )}

@@ -1,9 +1,11 @@
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
+// Delivery charges are now dynamic from Shiprocket API
+// These are fallback values only if API fails
 const deliveryCharges = {
-  standard: 80,
-  express: 150,
+  standard: 60,  // Fallback if carrier quote isn't available
+  express: 120,  // Fallback if carrier quote isn't available
 };
 
 export const applyPromoCode = async ({ code, cartTotal, shippingType, userId }) => {
