@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react'
 import {
   doc,
   getDoc,
   updateDoc,
   increment,
   collection,
-  addDoc,
   getDocs,
   query,
   where,
-  orderBy,
-  serverTimestamp
+  orderBy
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { formatINR } from '../lib/currency'
@@ -36,13 +34,7 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showImageModal, setShowImageModal] = useState(false)
-
-  // Reviews
   const [reviews, setReviews] = useState([])
-  const [rating, setRating] = useState('')
-  const [comment, setComment] = useState('')
-  const [canReview, setCanReview] = useState(false)
-  const [userHasReviewed, setUserHasReviewed] = useState(false)
 
   const whatsappNumber = '917895111299'
 
@@ -64,39 +56,20 @@ export default function ProductDetail() {
   useEffect(() => {
     if (!id) return
     const loadReviews = async () => {
-      const q = query(
-        collection(db, 'reviews'),
-        where('productId', '==', id),
-        orderBy('createdAt', 'desc')
-      )
-      const snap = await getDocs(q)
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      setReviews(data)
-      if (user) {
-        setUserHasReviewed(data.some(r => r.userId === user.uid))
+      try {
+        const q = query(
+          collection(db, 'reviews'),
+          where('productId', '==', id),
+          orderBy('createdAt', 'desc')
+        )
+        const snap = await getDocs(q)
+        setReviews(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      } catch (err) {
+        console.error("Error fetching reviews:", err)
       }
     }
     loadReviews()
-  }, [id, user])
-
-  useEffect(() => {
-    if (!user || !id) return
-    const verify = async () => {
-      const q = query(
-        collection(db, 'orders'),
-        where('userId', '==', user.uid),
-        where('status', '==', 'delivered')
-      )
-      const snap = await getDocs(q)
-      let ok = false
-      snap.forEach(d => {
-        const o = d.data()
-        if (o.products?.some(x => x.productId === id)) ok = true
-      })
-      setCanReview(ok)
-    }
-    verify()
-  }, [user, id])
+  }, [id])
 
   const handleAddToCart = async () => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
@@ -108,114 +81,162 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-10 w-10 border-b-2 border-rose-500 rounded-full" />
+      <div className="container-base px-4 py-24 text-center">
+        <div className="w-12 h-12 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-rose-600 font-display text-xl">Loading creation details...</p>
       </div>
     )
   }
 
   if (error || !p) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600">
-        {error || 'Product not found'}
+      <div className="container-base px-4 py-24 text-center max-w-md mx-auto space-y-4">
+        <h2 className="font-display text-3xl font-bold text-charcoal">Design Not Found</h2>
+        <p className="text-sm text-gray-500">{error || 'The requested product could not be located.'}</p>
+        <button onClick={() => navigate('/products')} className="btn-primary px-6 py-2.5 text-xs font-bold">
+          Return to Shop
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="product-page bg-white">
-      <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
-        {/* MAIN LAYOUT */}
-        <div className="flex flex-col md:flex-row gap-8">
+    <div className="container-base px-4 sm:px-6 py-10 space-y-12">
+      <div className="bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-10 border border-blush-100 shadow-soft">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start">
 
-          {/* IMAGE */}
-          <div className="w-full md:w-1/2 flex justify-center md:justify-start">
-            <div className="product-image-wrapper">
-              <img
-                src={p.images?.[0]?.url || p.imageUrl || '/logo.svg'}
-                alt={p.name}
-                className="product-image object-contain cursor-pointer rounded-xl"
-                onClick={() => setShowImageModal(true)}
-              />
-            </div>
-
-            <button
+          {/* Product Image Gallery */}
+          <div className="md:col-span-6 flex flex-col items-center">
+            <div 
               onClick={() => setShowImageModal(true)}
-              className="mt-4 md:hidden w-full border rounded-full py-2 text-sm"
+              className="w-full max-w-md aspect-square bg-ivory rounded-2xl overflow-hidden border border-blush-100 shadow-card cursor-pointer group relative"
             >
-              View Images
-            </button>
+              <img
+                src={p.images?.[0]?.url || p.images?.[0] || p.imageUrl || '/logo.svg'}
+                alt={p.name}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute bottom-3 right-3 glass-badge px-3 py-1 rounded-full text-xs font-bold text-charcoal opacity-90">
+                🔍 Click to Expand
+              </div>
+            </div>
           </div>
 
-          {/* DETAILS */}
-          <div className="w-full md:w-1/2">
-            <h1 className="text-2xl md:text-3xl font-semibold mb-3">{p.name}</h1>
-
-            <div className="flex items-center gap-2 mb-4">
-              <div className="text-yellow-500">
-                {'★'.repeat(Math.round(p.averageRating || 5))}
-              </div>
-              <span className="text-sm text-gray-500">
-                ({p.reviewCount || 0} reviews)
+          {/* Product Info */}
+          <div className="md:col-span-6 space-y-6">
+            <div>
+              <span className="text-xs font-bold tracking-widest text-rose-500 uppercase">
+                {p.productType || p.category || 'Handcrafted Jewelry'}
               </span>
-            </div>
+              <h1 className="font-display text-3xl sm:text-4xl font-bold text-charcoal mt-1">
+                {p.name}
+              </h1>
 
-            <p className="text-3xl font-bold mb-4">{formatINR(p.price)}</p>
-
-            <button
-              onClick={handleAddToCart}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-full font-semibold mb-6"
-            >
-              Add to Cart
-            </button>
-
-            <div className="text-gray-600 text-sm leading-relaxed mb-6">
-              {p.description || p.desc}
-            </div>
-
-            {/* WhatsApp */}
-            {p.customizable && (
-              <a
-                href={`https://wa.me/${whatsappNumber}?text=Hello Aarnya, I want customization for ${p.name}`}
-                target="_blank"
-                className="block w-full bg-green-500 text-white text-center py-3 rounded-lg"
-              >
-                Customize on WhatsApp
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* REVIEWS */}
-        <div className="mt-12 bg-rose-50 p-6 rounded-xl">
-          <h3 className="text-xl font-semibold mb-4">Customer Reviews</h3>
-
-          {reviews.length === 0 && (
-            <p className="text-gray-500">No reviews yet</p>
-          )}
-
-          {reviews.map(r => (
-            <div key={r.id} className="bg-white p-4 rounded-lg mb-3">
-              <div className="flex justify-between">
-                <span className="font-medium">{r.userName}</span>
-                <span className="text-yellow-500">{'★'.repeat(r.rating)}</span>
+              <div className="flex items-center gap-3 mt-2">
+                <div className="text-amber-400 text-sm">
+                  {'★'.repeat(Math.round(p.averageRating || 5))}
+                </div>
+                <span className="text-xs text-gray-500 font-medium">
+                  ({reviews.length || p.reviewCount || 0} reviews)
+                </span>
               </div>
-              <p className="text-sm text-gray-600 mt-1">{r.comment}</p>
             </div>
-          ))}
+
+            {/* Price */}
+            <div className="flex items-baseline gap-3">
+              <span className="font-display text-3xl font-bold text-charcoal">
+                {formatINR(p.price)}
+              </span>
+              {p.originalPrice && p.originalPrice > p.price && (
+                <span className="text-sm text-gray-400 line-through">
+                  {formatINR(p.originalPrice)}
+                </span>
+              )}
+            </div>
+
+            <p className="text-sm text-gray-600 font-light leading-relaxed">
+              {p.description || p.desc || p.shortDesc || 'Handcrafted with extreme care and premium quality materials.'}
+            </p>
+
+            {/* Action Buttons */}
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={handleAddToCart}
+                className="btn-primary w-full py-4 text-sm font-bold tracking-wide shadow-glow"
+              >
+                Add to Cart
+              </button>
+
+              <button
+                onClick={() => navigate(`/virtual-try-on/${p.id}`)}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-full text-sm transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                📸 Try On with Camera (Virtual Try-On)
+              </button>
+
+              {p.customizable && (
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=Hello Aarnya, I want customization for ${p.name}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-bold py-3.5 rounded-full text-sm text-center block transition-all"
+                >
+                  💬 Customize on WhatsApp
+                </a>
+              )}
+            </div>
+
+            {/* Guarantees */}
+            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-blush-100 text-xs text-gray-500">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🇮🇳</span>
+                <span>India-Wide Delivery</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-base">✨</span>
+                <span>100% Handcrafted</span>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* IMAGE MODAL */}
+      {/* Customer Reviews Section */}
+      <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-blush-100 shadow-soft space-y-6">
+        <h3 className="font-display text-2xl font-bold text-charcoal">Customer Reviews</h3>
+        
+        {reviews.length === 0 ? (
+          <p className="text-sm text-gray-500 font-light italic">No reviews yet for this creation.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {reviews.map(r => (
+              <div key={r.id} className="bg-ivory p-4 rounded-2xl border border-blush-100 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-xs text-charcoal">{r.userName || 'Verified Buyer'}</span>
+                  <span className="text-amber-400 text-xs">{'★'.repeat(r.rating || 5)}</span>
+                </div>
+                <p className="text-xs text-gray-600 font-light">{r.comment}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Image Modal */}
       {showImageModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowImageModal(false)}
+        >
           <img
-            src={p.images?.[0]?.url || p.imageUrl || '/logo.svg'}
-            className="max-w-full max-h-full object-contain"
-            onClick={() => setShowImageModal(false)}
+            src={p.images?.[0]?.url || p.images?.[0] || p.imageUrl || '/logo.svg'}
+            alt={p.name}
+            className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
           />
         </div>
       )}
     </div>
   )
 }
+

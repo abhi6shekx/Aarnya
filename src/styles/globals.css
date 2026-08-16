@@ -165,6 +165,71 @@ nav a:hover::after {
   animation-delay: var(--d, 0ms);
 }
 
+/* ===========================
+   GLASSMORPHISM & LUXURY UTILITIES
+=========================== */
+.glass-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(229, 106, 157, 0.12);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+}
+
+.glass-badge {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(248, 212, 228, 0.6);
+}
+
+.badge-gold {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.badge-rose {
+  background: linear-gradient(135deg, #fce7f1, #f8d4e4);
+  color: #a83563;
+  border: 1px solid #f3b7d0;
+}
+
+/* Luxury Pill Input */
+.input-luxury {
+  @apply w-full px-5 py-3 rounded-full bg-white border border-rose-200 text-charcoal focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-transparent transition-all duration-200 placeholder-rose-300;
+}
+
+/* Secondary Gold Button */
+.btn-gold {
+  background: linear-gradient(135deg, #d4af37, #b89228);
+  color: white;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, #b89228, #d4af37);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.4);
+}
+
+/* Subtle Shimmer for luxury highlights */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
 /* Heart pop animation for wishlist */
 @keyframes heartPop {
   0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
@@ -188,3 +253,4 @@ nav a:hover::after {
 .animate-heart-pop-reverse {
   animation: heartPopReverse 360ms cubic-bezier(.2,.9,.3,1) both;
 }
+

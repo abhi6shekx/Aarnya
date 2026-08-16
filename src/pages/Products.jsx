@@ -8,13 +8,12 @@ import { GENDER_CATEGORIES, PRODUCT_TYPES, GENDER_ICONS, CATEGORY_ICONS } from '
 export default function Products() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   
-  // Get filters from URL params
   const selectedGender = searchParams.get('gender') || ''
   const selectedProductType = searchParams.get('type') || ''
 
-  // Update URL when filters change
   const updateFilters = (gender, type) => {
     const params = new URLSearchParams()
     if (gender) params.set('gender', gender)
@@ -36,44 +35,74 @@ export default function Products() {
     fetchProducts()
   }, [])
 
-  // Filter products based on selected criteria
   const filteredProducts = products.filter(product => {
     const genderMatch = !selectedGender || product.gender === selectedGender
     const typeMatch = !selectedProductType || product.productType === selectedProductType
-    return genderMatch && typeMatch
+    const searchMatch = !searchQuery || 
+      product.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      product.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.shortDesc?.toLowerCase().includes(searchQuery.toLowerCase())
+    return genderMatch && typeMatch && searchMatch
   })
 
   if (loading) {
-    return <p className="text-center text-rose-500 font-medium py-20 animate-pulse">Loading beautiful creations...</p>
-  }
-
-  if (!products.length) {
     return (
-      <div className="text-center py-20 bg-watercolor bg-cover bg-center rounded-2xl shadow-soft">
-        <h2 className="font-display text-3xl text-rose-600 mb-4">No Products Yet</h2>
-        <p className="text-muted mb-6">Your jewelry collection is waiting to shine ✨</p>
-        <p className="text-sm text-rose-400">Go to <span className="font-semibold">Admin</span> to start adding products</p>
+      <div className="container-base px-4 py-20 text-center">
+        <div className="w-12 h-12 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-rose-600 font-display text-xl">Loading handcrafted jewelry...</p>
       </div>
     )
   }
 
   return (
-    <div className="py-8">
-      {/* Filter Section */}
-      <div className="mb-8 bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-soft">
-        <h2 className="font-display text-2xl text-charcoal mb-6">Filter Products</h2>
+    <div className="container-base px-4 sm:px-6 py-10 space-y-10">
+      
+      {/* Header Title */}
+      <div className="text-center max-w-2xl mx-auto space-y-2">
+        <span className="text-xs font-bold tracking-widest text-rose-500 uppercase">Artisanal Catalog</span>
+        <h1 className="font-display text-4xl sm:text-5xl font-bold text-charcoal">
+          Explore Our Collection
+        </h1>
+        <p className="text-sm text-gray-500 font-light">
+          Find handcrafted earrings, rings, and unique accessories designed to shine.
+        </p>
+      </div>
+
+      {/* Luxury Filter Panel */}
+      <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-blush-200 shadow-soft space-y-6">
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Search Bar */}
+        <div className="max-w-xl mx-auto relative">
+          <input
+            type="text"
+            placeholder="Search by name, category, or style..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input-luxury pr-12 text-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-charcoal text-xs font-bold"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-blush-100">
           {/* Gender Filter */}
           <div>
-            <label className="block text-sm font-medium text-charcoal mb-3">Shop by Gender</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">
+              Filter by Gender
+            </label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => updateFilters('', selectedProductType)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
                   !selectedGender 
-                    ? 'bg-blush-500 text-white shadow-lg' 
-                    : 'bg-white/50 text-charcoal hover:bg-blush-100'
+                    ? 'bg-rose-600 text-white shadow-soft' 
+                    : 'bg-blush-50/80 text-charcoal border border-rose-100 hover:bg-blush-100'
                 }`}
               >
                 All
@@ -82,10 +111,10 @@ export default function Products() {
                 <button
                   key={gender.value}
                   onClick={() => updateFilters(gender.value, selectedProductType)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                  className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                     selectedGender === gender.value 
-                      ? 'bg-blush-500 text-white shadow-lg' 
-                      : 'bg-white/50 text-charcoal hover:bg-blush-100'
+                      ? 'bg-rose-600 text-white shadow-soft' 
+                      : 'bg-blush-50/80 text-charcoal border border-rose-100 hover:bg-blush-100'
                   }`}
                 >
                   <span>{GENDER_ICONS[gender.value]}</span>
@@ -97,14 +126,16 @@ export default function Products() {
 
           {/* Product Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-charcoal mb-3">Shop by Category</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">
+              Filter by Category
+            </label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => updateFilters(selectedGender, '')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
                   !selectedProductType 
-                    ? 'bg-blush-500 text-white shadow-lg' 
-                    : 'bg-white/50 text-charcoal hover:bg-blush-100'
+                    ? 'bg-rose-600 text-white shadow-soft' 
+                    : 'bg-blush-50/80 text-charcoal border border-rose-100 hover:bg-blush-100'
                 }`}
               >
                 All Categories
@@ -113,10 +144,10 @@ export default function Products() {
                 <button
                   key={type.value}
                   onClick={() => updateFilters(selectedGender, type.value)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                  className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                     selectedProductType === type.value 
-                      ? 'bg-blush-500 text-white shadow-lg' 
-                      : 'bg-white/50 text-charcoal hover:bg-blush-100'
+                      ? 'bg-rose-600 text-white shadow-soft' 
+                      : 'bg-blush-50/80 text-charcoal border border-rose-100 hover:bg-blush-100'
                   }`}
                 >
                   <span>{CATEGORY_ICONS[type.value]}</span>
@@ -127,31 +158,41 @@ export default function Products() {
           </div>
         </div>
 
-        {/* Results Summary */}
-        <div className="mt-4 text-sm text-muted">
-          Showing {filteredProducts.length} of {products.length} products
-          {selectedGender && ` • ${GENDER_CATEGORIES.find(g => g.value === selectedGender)?.label}`}
-          {selectedProductType && ` • ${PRODUCT_TYPES.find(t => t.value === selectedProductType)?.label}`}
+        {/* Results Counter */}
+        <div className="text-xs text-gray-500 font-medium pt-2 flex items-center justify-between">
+          <span>Showing {filteredProducts.length} of {products.length} products</span>
+          {(selectedGender || selectedProductType || searchQuery) && (
+            <button 
+              onClick={() => { updateFilters('', ''); setSearchQuery(''); }}
+              className="text-rose-600 hover:underline font-bold"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       </div>
 
       {/* Products Grid */}
-      <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        {filteredProducts.map(p => <ProductCard key={p.id} p={p} />)}
-      </div>
-
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-20">
-          <h3 className="font-display text-2xl text-charcoal mb-4">No Products Found</h3>
-          <p className="text-muted mb-6">Try adjusting your filters to see more products</p>
+      {filteredProducts.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {filteredProducts.map(p => <ProductCard key={p.id} p={p} />)}
+        </div>
+      ) : (
+        <div className="bg-white/80 rounded-3xl p-16 text-center border border-blush-100 shadow-soft max-w-lg mx-auto space-y-4">
+          <span className="text-4xl">🔍</span>
+          <h3 className="font-display text-2xl font-bold text-charcoal">No Designs Found</h3>
+          <p className="text-sm text-gray-500 font-light">
+            We couldn't find any pieces matching your current filters or search term.
+          </p>
           <button
-            onClick={() => updateFilters('', '')}
-            className="btn-primary"
+            onClick={() => { updateFilters('', ''); setSearchQuery(''); }}
+            className="btn-primary px-6 py-3 text-xs font-bold"
           >
-            Clear All Filters
+            Clear Filters & Search
           </button>
         </div>
       )}
     </div>
   )
 }
+

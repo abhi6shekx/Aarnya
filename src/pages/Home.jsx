@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore'
+import { collection, getDocs, limit, query, where } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import ProductCard from '../components/ProductCard'
 import PromoBanner from '../components/PromoBanner'
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([])
-  // Use the site favicon as the hero graphic (local asset) and allow fallback to logo if missing
   const [heroSrc, setHeroSrc] = useState('/favicon.svg')
-  
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  // WhatsApp configuration
   const whatsappNumber = '917895111299'
   const whatsappMessage = encodeURIComponent('Hi! I would like to explore your jewelry collection. Can you help me?')
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`
@@ -44,192 +41,239 @@ export default function Home() {
 
   const categories = [
     {
-      title: 'Women',
+      title: "Women's Grace",
+      subtitle: 'Earrings, Rings & Neckpieces',
       emoji: '💎',
-      description: 'Elegant earrings, rings & accessories',
-      color: 'from-rose-100 to-pink-50',
+      color: 'from-rose-50 to-blush-100',
       link: '/products?gender=women'
     },
     {
-      title: 'Men',
+      title: "Men's Minimal",
+      subtitle: 'Statement Bands & Signet Rings',
       emoji: '🔱',
-      description: 'Sophisticated rings & minimal pieces',
-      color: 'from-amber-100 to-yellow-50',
+      color: 'from-amber-50 to-gold-100',
       link: '/products?gender=men'
     },
     {
-      title: 'Unisex',
+      title: 'Unisex Classics',
+      subtitle: 'Versatile Handmade Pieces',
       emoji: '✨',
-      description: 'Versatile designs for everyone',
-      color: 'from-violet-100 to-purple-50',
+      color: 'from-purple-50 to-pink-50',
       link: '/products?gender=unisex'
     }
   ]
 
   return (
-    <div className="space-y-20">
+    <div className="space-y-16 pb-12">
       {/* Promo Banner */}
       <PromoBanner />
       
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-25 to-violet-50"></div>
-        <div className="relative px-4 sm:px-6 md:px-12 py-8 md:py-16 text-center md:text-left">
-          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
-            {/* Content */}
-            <div className="space-y-8 fade-up bg-gradient-to-b from-pink-50 to-white rounded-3xl shadow-sm p-6">
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-rose-200">
-                  <span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
-                  <span className="text-sm font-medium text-rose-700">Handcrafted with Love</span>
-                </div>
-                
-                <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-semibold leading-tight text-charcoal text-center md:text-left">
-                  Where elegance
-                  <span className="block text-rose-600">meets emotion</span>
-                </h1>
-                
-                <p className="text-lg text-gray-600 max-w-lg leading-relaxed">
-                  Discover our curated collection of premium handmade jewelry. 
-                  Each piece tells a story, crafted with precision and passion in India.
-                </p>
+      {/* Luxury Hero Section */}
+      <section className="relative overflow-hidden pt-4 pb-12 md:py-16 bg-luxury-hero">
+        <div className="container-base px-4 sm:px-6">
+          <div className="grid lg:grid-cols-12 gap-10 items-center">
+            
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-7 text-center lg:text-left z-10">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/90 backdrop-blur-md rounded-full border border-blush-300 shadow-soft">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                <span className="text-xs font-bold text-rose-700 tracking-wider uppercase">
+                  Artisanal Luxury • Handcrafted in India
+                </span>
               </div>
+              
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-charcoal leading-[1.15]">
+                Where Elegance <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-blush-500 to-gold-600">
+                  Meets Emotion
+                </span>
+              </h1>
+              
+              <p className="text-base sm:text-lg text-gray-600 max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
+                Discover our exquisite collection of handmade and ready-made jewelry. Each design is meticulously created to accentuate your unique beauty.
+              </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 fade-up" style={{'--d': '200ms'}}>
+              {/* Call To Actions */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
                 <Link 
                   to="/products"
-                  className="btn-primary px-8 py-4 text-lg font-medium inline-flex items-center justify-center gap-2 group"
+                  className="btn-primary w-full sm:w-auto px-8 py-4 text-sm font-bold tracking-wide flex items-center justify-center gap-2 group shadow-glow"
                 >
                   Explore Collection
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 </Link>
+
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-7 py-4 text-sm font-semibold text-charcoal bg-white/90 hover:bg-white border border-blush-200 rounded-full shadow-soft hover:shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <span className="text-emerald-600 text-lg">💬</span>
+                  Custom Order Inquiry
+                </a>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-1 gap-8 pt-8 fade-up" style={{'--d': '400ms'}}>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-rose-600">100%</div>
-                  <div className="text-sm text-gray-600">Handcrafted</div>
+              {/* Trust Badges Bar */}
+              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-rose-200/60 max-w-lg mx-auto lg:mx-0">
+                <div className="text-center lg:text-left">
+                  <p className="font-display text-2xl font-bold text-rose-600">100%</p>
+                  <p className="text-xs text-gray-500 font-medium">Handmade Care</p>
+                </div>
+                <div className="text-center lg:text-left">
+                  <p className="font-display text-2xl font-bold text-rose-600">India</p>
+                  <p className="text-xs text-gray-500 font-medium">Nationwide Shipping</p>
+                </div>
+                <div className="text-center lg:text-left">
+                  <p className="font-display text-2xl font-bold text-rose-600">Pure</p>
+                  <p className="text-xs text-gray-500 font-medium">Quality Materials</p>
                 </div>
               </div>
             </div>
 
-            {/* Image */}
-            <div className="relative fade-up" style={{'--d': '300ms'}}>
-              <div className="relative">
-                <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl">
-                  <div className="bg-white flex items-center justify-center w-full h-full">
+            {/* Right Graphic Showcase */}
+            <div className="lg:col-span-5 relative flex justify-center">
+              <div className="relative w-full max-w-md">
+                {/* Background Ambient Glow */}
+                <div className="absolute -inset-4 bg-gradient-to-tr from-blush-300/40 to-rose-200/50 rounded-[2.5rem] blur-2xl -z-10"></div>
+
+                <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2.5rem] shadow-luxury border border-white">
+                  <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-ivory to-blush-50 flex items-center justify-center p-8 relative">
                     <img
                       src={heroSrc}
-                      alt="Aarnya favicon"
-                      className="w-64 h-64 sm:w-80 sm:h-80 md:w-[48rem] md:h-[48rem] p-6 object-contain"
+                      alt="Aarnya Jewelry"
+                      className="w-full h-full object-contain filter drop-shadow-xl transition-transform duration-700 hover:scale-105"
                       loading="eager"
                       onError={() => { if (heroSrc !== '/logo.svg') setHeroSrc('/logo.svg') }}
                     />
+                    <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md py-2.5 px-4 rounded-xl text-center border border-blush-100 shadow-sm">
+                      <p className="font-display text-sm font-semibold text-charcoal">Handcrafted Elegance</p>
+                      <p className="text-[11px] text-rose-500 font-medium">Available for Instant Try-On</p>
+                    </div>
                   </div>
                 </div>
-                {/* Floating elements */}
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
-                  <span className="text-2xl">💎</span>
+
+                {/* Floating Glass Accent Pills */}
+                <div className="absolute -top-4 -right-2 glass-badge px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2 animate-bounce" style={{ animationDuration: '4s' }}>
+                  <span className="text-lg">✨</span>
+                  <span className="text-xs font-bold text-charcoal">Artisan Crafted</span>
                 </div>
-                <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-rose-100/80 backdrop-blur-sm rounded-2xl shadow-lg flex items-center justify-center">
-                  <span className="text-xl">✨</span>
+
+                <div className="absolute -bottom-4 -left-2 glass-badge px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
+                  <span className="text-lg">💎</span>
+                  <span className="text-xs font-bold text-charcoal">Premium Quality</span>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
 
-      {/* Categories Section */}
-      <section className="container-base">
-        <div className="text-center mb-12 fade-up">
-          <h2 className="font-display text-4xl text-charcoal mb-4">Shop by Category</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover our carefully curated collections designed for every style and occasion
+      {/* Categories Showcase Section */}
+      <section className="container-base px-4 sm:px-6">
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <span className="text-xs font-bold tracking-widest text-rose-500 uppercase">Curated Collections</span>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-charcoal mt-1">Shop by Category</h2>
+          <p className="text-sm text-gray-500 font-light mt-2">
+            Explore handcrafted jewelry tailored to your unique style statement
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {categories.map((category, index) => (
+        <div className="grid md:grid-cols-3 gap-6">
+          {categories.map((cat) => (
             <Link
-              key={category.title}
-              to={category.link}
-              className={`card p-8 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-gradient-to-br ${category.color} border-0 fade-up`}
-              style={{'--d': `${(index + 1) * 100}ms`}}
+              key={cat.title}
+              to={cat.link}
+              className={`group relative overflow-hidden rounded-3xl p-8 bg-gradient-to-br ${cat.color} border border-white/80 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between min-h-[220px]`}
             >
-              <div className="text-4xl mb-4">{category.emoji}</div>
-              <h3 className="font-display text-2xl text-charcoal mb-2">{category.title}</h3>
-              <p className="text-gray-600 mb-4">{category.description}</p>
-              <span className="inline-flex items-center text-rose-600 font-medium group">
-                Explore Collection
-                <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-4xl p-3 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm">{cat.emoji}</span>
+                <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-rose-600 group-hover:bg-rose-500 group-hover:text-white transition-colors shadow-sm">
+                  →
+                </span>
+              </div>
+              <div>
+                <h3 className="font-display text-2xl font-bold text-charcoal group-hover:text-rose-600 transition-colors">
+                  {cat.title}
+                </h3>
+                <p className="text-xs text-gray-600 font-light mt-1">
+                  {cat.subtitle}
+                </p>
+              </div>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="container-base">
-        <div className="flex items-center justify-between mb-8 fade-up">
-          <h2 className="font-display text-4xl text-charcoal">Featured Pieces</h2>
-          <Link to="/products" className="text-rose-600 hover:underline font-medium">
-            View All Products →
+      {/* Featured Products Section */}
+      <section className="container-base px-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+          <div>
+            <span className="text-xs font-bold tracking-widest text-rose-500 uppercase">Handpicked Favorites</span>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-charcoal mt-1">Featured Creations</h2>
+          </div>
+          <Link to="/products" className="text-sm font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1">
+            Browse Full Catalog →
           </Link>
         </div>
 
         {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="card h-80 animate-pulse bg-gray-100"></div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-80 rounded-3xl animate-pulse bg-gray-100"></div>
             ))}
           </div>
         ) : featuredProducts.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product, index) => (
-              <div key={product.id} className="fade-up" style={{'--d': `${index * 100}ms`}}>
-                <ProductCard p={product} />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} p={product} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 fade-up">
-            <p className="text-gray-600">No featured products available at the moment.</p>
+          <div className="bg-white/80 rounded-3xl p-12 text-center border border-blush-100 max-w-lg mx-auto">
+            <p className="text-gray-500 font-light mb-4">Explore our complete collection to discover timeless handmade jewelry.</p>
+            <Link to="/products" className="btn-primary px-6 py-2.5 text-xs font-bold">
+              View All Products
+            </Link>
           </div>
         )}
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-rose-100 to-pink-100">
-        <div className="container-base py-20">
-          <div className="text-center max-w-3xl mx-auto fade-up">
-            <h2 className="font-display text-4xl text-charcoal mb-6">
-              Need Something Custom?
+      {/* Custom Orders WhatsApp Callout */}
+      <section className="container-base px-4 sm:px-6">
+        <div className="bg-gradient-to-r from-rose-500 via-blush-500 to-rose-600 rounded-3xl p-8 sm:p-12 text-white text-center sm:text-left relative overflow-hidden shadow-luxury">
+          <div className="absolute right-0 bottom-0 opacity-10 translate-x-12 translate-y-12">
+            <img src="/logo.svg" alt="Aarnya" className="w-96 h-96 object-contain" />
+          </div>
+
+          <div className="relative z-10 max-w-2xl space-y-4">
+            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold tracking-wider uppercase">
+              Bespoke Artisan Designs
+            </span>
+            <h2 className="font-display text-3xl sm:text-5xl font-bold leading-tight">
+              Looking for Custom Jewelry?
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
-              Have a special design in mind? Chat with us on WhatsApp and our artisans can bring your vision to life!
+            <p className="text-sm sm:text-base font-light text-rose-50 leading-relaxed">
+              Have a custom design or bridal theme in mind? Share your inspiration directly with our master artisans on WhatsApp.
             </p>
-            <div className="flex justify-center">
+            <div className="pt-2">
               <a 
-                href="https://wa.me/917895111299?text=Hi!%20I%20want%20to%20customize%20a%20jewelry%20piece.%20Can%20you%20help%20me?"
+                href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-primary px-8 py-4 text-lg font-medium inline-flex items-center justify-center gap-2"
+                className="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-white text-rose-600 hover:bg-rose-50 font-bold text-sm rounded-full shadow-lg transition-all transform hover:scale-105"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.306"/>
-                </svg>
-                Chat on WhatsApp
+                <span>💬 Chat on WhatsApp</span>
               </a>
             </div>
           </div>
         </div>
       </section>
+
     </div>
   )
 }
+
