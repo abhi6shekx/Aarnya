@@ -50,17 +50,40 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
   useEffect(() => {
     // If product is not provided via props/state but an id param is present, fetch it
     const tryFetchProduct = async () => {
-      if (!localProduct && routeProductId) {
+      if (!localProduct) {
+        if (!routeProductId || routeProductId === 'sample' || routeProductId === 'demo') {
+          setLocalProduct({
+            id: 'sample',
+            name: 'Sample Jewelry Creation',
+            category: 'earrings',
+            productType: 'earrings',
+            virtualTryOnEnabled: true
+          })
+          return
+        }
         try {
           const d = await getDoc(doc(db, 'products', routeProductId))
           if (d.exists()) {
             setLocalProduct({ id: d.id, ...d.data() })
           } else {
-            setError('Product not found')
+            // Fallback demo product if id not found in firestore
+            setLocalProduct({
+              id: routeProductId,
+              name: 'Sample Jewelry Piece',
+              category: 'earrings',
+              productType: 'earrings',
+              virtualTryOnEnabled: true
+            })
           }
         } catch (err) {
           console.error('Failed to fetch product:', err)
-          setError('Failed to load product')
+          setLocalProduct({
+            id: 'sample',
+            name: 'Sample Jewelry Piece',
+            category: 'earrings',
+            productType: 'earrings',
+            virtualTryOnEnabled: true
+          })
         }
       }
     }
@@ -70,20 +93,16 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
     ;(async () => {
       if (!mounted) return
       await tryFetchProduct()
-      // DO NOT call initializeCamera here — wait until the video element is mounted
     })()
 
     return () => {
       mounted = false
-      // Stop any active media stream
       if (streamRef.current) {
         try { streamRef.current.getTracks().forEach(track => track.stop()) } catch (e) { /* ignore */ }
       }
-      // Stop mediapipe camera if used
       if (mpCameraRef.current && typeof mpCameraRef.current.stop === 'function') {
         try { mpCameraRef.current.stop() } catch (e) { /* ignore */ }
       }
-      // Close faceMesh
       if (faceMeshRef.current && typeof faceMeshRef.current.close === 'function') {
         try { faceMeshRef.current.close() } catch (e) { /* ignore */ }
       }
@@ -91,7 +110,6 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
         clearTimeout(initTimeoutRef.current)
         initTimeoutRef.current = null
       }
-      // allow re-initialization if component remounts
       try { startedRef.current = false } catch (e) {}
     }
   }, [])
@@ -183,65 +201,47 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
             height: { ideal: 480 }
           }
         })
-      } catch (gmErr) {
-        safeWarn('getUserMedia failed', gmErr)
-        // Provide more actionable messaging based on error type
-        let userMessage = 'Failed to access camera.'
-        if (gmErr.name === 'NotAllowedError' || gmErr.name === 'SecurityError' || gmErr.name === 'PermissionDeniedError') {
-          userMessage = 'Camera permission was denied. Please allow camera access in your browser and retry.'
-        } else if (gmErr.name === 'NotFoundError' || gmErr.name === 'DevicesNotFoundError') {
-          userMessage = 'No camera device found. Make sure a camera is connected.'
-        } else if (gmErr.name === 'NotReadableError' || gmErr.name === 'TrackStartError') {
-          userMessage = 'Camera is in use by another application or not accessible. Close other apps and retry.'
-        } else if (gmErr.name === 'OverconstrainedError' || gmErr.name === 'ConstraintNotSatisfiedError') {
-          userMessage = 'Unable to satisfy camera constraints. Try a different device or lower camera settings.'
-        }
-
-        setError(userMessage)
-        setIsLoading(false)
-
-        // If permissions API is available, listen for changes and retry automatically when granted
+      } catch (firstErr) {
+        safeWarn('Ideal getUserMedia failed, retrying with basic video constraint...', firstErr)
         try {
-          if (navigator.permissions && navigator.permissions.query) {
-            const p = await navigator.permissions.query({ name: 'camera' })
-            safeLog('Permissions camera state:', p.state)
-            const onPermChange = () => {
-              safeLog('Permissions change detected:', p.state)
-              if (p.state === 'granted') {
-                // small delay to allow browser to finalize device allocation
-                setTimeout(() => {
-                  initializeCamera(initialProduct)
-                }, 800)
+          stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        } catch (gmErr) {
+          safeWarn('getUserMedia failed', gmErr)
+          let userMessage = 'Failed to access camera.'
+          if (gmErr.name === 'NotAllowedError' || gmErr.name === 'SecurityError' || gmErr.name === 'PermissionDeniedError') {
+            userMessage = 'Camera permission was denied or blocked. Please enable camera permission in your browser settings and click Retry.'
+          } else if (gmErr.name === 'NotFoundError' || gmErr.name === 'DevicesNotFoundError') {
+            userMessage = 'No camera device found. Please connect a camera and click Retry.'
+          } else if (gmErr.name === 'NotReadableError' || gmErr.name === 'TrackStartError') {
+            userMessage = 'Camera is in use by another application. Close other camera apps and click Retry.'
+          } else if (gmErr.name === 'OverconstrainedError' || gmErr.name === 'ConstraintNotSatisfiedError') {
+            userMessage = 'Unable to satisfy camera constraints. Click Retry to re-initialize.'
+          }
+
+          setError(userMessage)
+          setIsLoading(false)
+
+          try {
+            if (navigator.permissions && navigator.permissions.query) {
+              const p = await navigator.permissions.query({ name: 'camera' })
+              safeLog('Permissions camera state:', p.state)
+              const onPermChange = () => {
+                safeLog('Permissions change detected:', p.state)
+                if (p.state === 'granted') {
+                  setTimeout(() => {
+                    initializeCamera(initialProduct)
+                  }, 500)
+                }
               }
+              p.addEventListener('change', onPermChange)
+              initTimeoutRef.current = () => p.removeEventListener('change', onPermChange)
             }
-            p.addEventListener('change', onPermChange)
-            // store cleanup reference
-            initTimeoutRef.current = () => p.removeEventListener('change', onPermChange)
+          } catch (permErr) {
+            safeWarn('Permissions API query failed:', permErr)
           }
-        } catch (permErr) {
-          safeWarn('Permissions API unavailable or failed to query:', permErr)
-        }
 
-        // Also listen for devicechange as a fallback and retry once devices appear
-        try {
-          const onDeviceChange = async () => {
-            safeLog('mediaDevices devicechange event')
-            try {
-              const devices = await navigator.mediaDevices.enumerateDevices()
-              const hasVideo = devices.some(d => d.kind === 'videoinput')
-              if (hasVideo) {
-                setTimeout(() => initializeCamera(initialProduct), 800)
-              }
-            } catch (e) { /* ignore */ }
-          }
-          navigator.mediaDevices.addEventListener('devicechange', onDeviceChange)
-          // store cleanup reference
-          initTimeoutRef.current = () => navigator.mediaDevices.removeEventListener('devicechange', onDeviceChange)
-        } catch (dcErr) {
-          safeWarn('devicechange listener not available', dcErr)
+          return
         }
-
-        return
       }
 
       streamRef.current = stream
@@ -500,17 +500,38 @@ export default function VirtualTryOn({ product: propProduct, onClose }) {
 
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-md mx-4">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Camera Access Required</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button onClick={handleClose} className="btn-primary">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-rose-100 text-center space-y-4 animate-fade-in">
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </div>
+          
+          <h3 className="font-display text-2xl font-bold text-charcoal">
+            Camera Connection
+          </h3>
+          
+          <p className="text-sm text-gray-600 font-light leading-relaxed">
+            {error}
+          </p>
+
+          <div className="flex flex-col gap-2.5 pt-2">
+            <button 
+              onClick={() => {
+                setError('')
+                setIsLoading(true)
+                startedRef.current = false
+                initializeCamera()
+              }} 
+              className="btn-primary w-full py-3 text-xs font-bold shadow-soft"
+            >
+              🔄 Retry Camera Stream
+            </button>
+            <button 
+              onClick={handleClose} 
+              className="btn-outline w-full py-2.5 text-xs font-semibold"
+            >
               Close
             </button>
           </div>
