@@ -115,9 +115,23 @@ export const AuthProvider = ({ children }) => {
 
     // role helpers
     isSuperAdmin: () => userRole === 'superadmin',
-    isAdmin: () => ['admin', 'superadmin'].includes(userRole),
-    isStaff: () => ['staff', 'admin', 'superadmin'].includes(userRole),
-    isCustomer: () => userRole === 'customer'
+    isAdmin: () => ['admin', 'superadmin', 'manager'].includes(userRole),
+    isStaff: () => ['staff', 'admin', 'superadmin', 'manager'].includes(userRole),
+    isCustomer: () => userRole === 'customer',
+
+    // permission helpers used by Admin panel
+    canManageProducts: () => ['admin', 'superadmin', 'manager', 'staff'].includes(userRole),
+    canDeleteProducts: () => ['admin', 'superadmin', 'manager'].includes(userRole),
+    canManageUsers: () => ['admin', 'superadmin', 'manager'].includes(userRole),
+    canManageRole: (targetRole) => {
+      if (userRole === 'superadmin') return true
+      if (userRole === 'admin' && ['staff', 'customer', 'manager'].includes(targetRole)) return true
+      return false
+    },
+    getRoleLevel: (role) => {
+      const levels = { superadmin: 4, admin: 3, manager: 2, staff: 1, customer: 0 }
+      return levels[role] || 0
+    }
   }
 
   return (
