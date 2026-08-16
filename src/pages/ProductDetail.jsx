@@ -101,7 +101,18 @@ export default function ProductDetail() {
   }
 
   return (
-    <div className="container-base px-4 sm:px-6 py-10 space-y-12">
+    <div className="container-base px-4 sm:px-6 py-8 space-y-6">
+      {/* Back Button */}
+      <div>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 border border-blush-200 text-charcoal hover:bg-blush-100 hover:text-rose-600 text-xs font-bold transition-all shadow-sm group"
+        >
+          <span className="group-hover:-translate-x-1 transition-transform">←</span>
+          <span>Back to Products</span>
+        </button>
+      </div>
+
       <div className="bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-10 border border-blush-100 shadow-soft">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start">
 
