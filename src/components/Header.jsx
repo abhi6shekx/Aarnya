@@ -136,18 +136,6 @@ export default function Header() {
             Cart
           </NavLink>
 
-          <NavLink to="/virtual-try-on/sample" 
-            className={({ isActive }) => 
-              `px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                isActive 
-                  ? 'bg-emerald-100 text-emerald-800 shadow-soft' 
-                  : 'text-emerald-700 bg-emerald-50/80 hover:bg-emerald-100'
-              }`
-            }
-          >
-            📸 Try-On AR
-          </NavLink>
-
           <a
             href={whatsappLink}
             target="_blank"
@@ -268,10 +256,6 @@ export default function Header() {
                 <span className="text-xs text-rose-500">❤️</span>
               </NavLink>
               <NavLink to="/cart" className="px-4 py-2.5 rounded-xl text-charcoal font-medium hover:bg-blush-50" onClick={() => setShowMobileMenu(false)}>Cart</NavLink>
-              <NavLink to="/virtual-try-on/sample" className="px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-800 font-bold flex items-center justify-between" onClick={() => setShowMobileMenu(false)}>
-                <span>📸 Virtual Try-On Camera</span>
-                <span className="text-xs bg-emerald-200 px-2 py-0.5 rounded-full">AR</span>
-              </NavLink>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 font-medium flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Chat on WhatsApp
