@@ -106,15 +106,15 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start">
 
           {/* Product Image Gallery */}
-          <div className="md:col-span-6 flex flex-col items-center">
+          <div className="md:col-span-5 flex flex-col items-center">
             <div 
               onClick={() => setShowImageModal(true)}
-              className="w-full max-w-md aspect-square bg-ivory rounded-2xl overflow-hidden border border-blush-100 shadow-card cursor-pointer group relative"
+              className="w-full max-w-md bg-ivory rounded-2xl overflow-hidden border border-blush-100 shadow-card cursor-pointer group relative flex items-center justify-center min-h-[350px] max-h-[520px]"
             >
               <img
                 src={p.images?.[0]?.url || p.images?.[0] || p.imageUrl || '/logo.svg'}
                 alt={p.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full max-h-[520px] object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute bottom-3 right-3 glass-badge px-3 py-1 rounded-full text-xs font-bold text-charcoal opacity-90">
                 🔍 Click to Expand
@@ -123,7 +123,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Product Info */}
-          <div className="md:col-span-6 space-y-6">
+          <div className="md:col-span-7 space-y-6">
             <div>
               <span className="text-xs font-bold tracking-widest text-rose-500 uppercase">
                 {p.productType || p.category || 'Handcrafted Jewelry'}
