@@ -105,7 +105,16 @@ const Profile = () => {
         await signup(formData.email, formData.password, formData.name);
       }
     } catch (error) {
-      setError(error.message);
+      console.error('Auth error:', error);
+      let msg = error.message;
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        msg = 'Invalid email or password. Please check your credentials.';
+      } else if (error.code === 'auth/email-already-in-use') {
+        msg = 'An account with this email already exists. Please login instead.';
+      } else if (error.code === 'auth/weak-password') {
+        msg = 'Password should be at least 6 characters long.';
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -117,7 +126,8 @@ const Profile = () => {
     try {
       await signInWithGoogle();
     } catch (error) {
-      setError(error.message);
+      console.error('Google Auth error:', error);
+      setError(error.message || 'Failed to sign in with Google');
     } finally {
       setLoading(false);
     }
