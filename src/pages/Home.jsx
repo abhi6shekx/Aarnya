@@ -139,31 +139,72 @@ export default function Home() {
                 {/* Background Ambient Glow */}
                 <div className="absolute -inset-4 bg-gradient-to-tr from-blush-300/40 to-rose-200/50 rounded-[2.5rem] blur-2xl -z-10"></div>
 
-                <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2.5rem] shadow-luxury border border-white">
-                  <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-ivory to-blush-50 flex items-center justify-center p-8 relative">
+                <div className="bg-white/90 backdrop-blur-md p-5 rounded-[2.5rem] shadow-luxury border border-white space-y-4">
+                  {/* Hero Main Card */}
+                  <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-ivory to-blush-50 flex items-center justify-center p-6 relative group">
                     <img
-                      src={heroSrc}
-                      alt="Aarnya Jewelry"
-                      className="w-full h-full object-contain filter drop-shadow-xl transition-transform duration-700 hover:scale-105"
+                      src={featuredProducts?.[0]?.images?.[0]?.url || featuredProducts?.[0]?.images?.[0] || featuredProducts?.[0]?.imageUrl || heroSrc}
+                      alt="Aarnya Luxury Jewelry"
+                      className="w-full h-full object-contain filter drop-shadow-xl transition-transform duration-700 group-hover:scale-105"
                       loading="eager"
                       onError={() => { if (heroSrc !== '/logo.svg') setHeroSrc('/logo.svg') }}
                     />
-                    <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md py-2.5 px-4 rounded-xl text-center border border-blush-100 shadow-sm">
-                      <p className="font-display text-sm font-semibold text-charcoal">Handcrafted Elegance</p>
-                      <p className="text-[11px] text-rose-500 font-medium">Available for Instant Try-On</p>
+                    
+                    {/* Live Virtual Try-On Overlay Badge */}
+                    <Link
+                      to={featuredProducts?.[0] ? `/virtual-try-on/${featuredProducts[0].id}` : '/virtual-try-on/sample'}
+                      className="absolute top-3 left-3 bg-emerald-600/90 hover:bg-emerald-700 text-white backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md transition-all hover:scale-105"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                      📸 Try-On Live AR
+                    </Link>
+
+                    {/* Top Right Rating Badge */}
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-amber-900 border border-amber-200 shadow-sm flex items-center gap-1">
+                      <span className="text-amber-500">★</span> 4.9 (120+)
+                    </div>
+
+                    {/* Bottom Info Pill */}
+                    <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md py-3 px-4 rounded-2xl border border-blush-100 shadow-soft flex items-center justify-between">
+                      <div>
+                        <p className="font-display text-sm font-bold text-charcoal truncate">
+                          {featuredProducts?.[0]?.name || 'Signature Handmade Collection'}
+                        </p>
+                        <p className="text-[11px] text-rose-500 font-semibold">
+                          {featuredProducts?.[0]?.price ? `₹${featuredProducts[0].price} • Pure Craftsmanship` : 'Available for Instant Try-On'}
+                        </p>
+                      </div>
+                      <Link
+                        to={featuredProducts?.[0] ? `/product/${featuredProducts[0].id}` : '/products'}
+                        className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
+                      >
+                        View
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Feature Highlights Grid */}
+                  <div className="grid grid-cols-2 gap-2.5 pt-1">
+                    <div className="bg-blush-50/70 p-2.5 rounded-xl border border-blush-100 flex items-center gap-2">
+                      <span className="text-base">🚚</span>
+                      <span className="text-[11px] font-bold text-charcoal">Express Shipping</span>
+                    </div>
+                    <div className="bg-amber-50/70 p-2.5 rounded-xl border border-amber-100 flex items-center gap-2">
+                      <span className="text-base">🎁</span>
+                      <span className="text-[11px] font-bold text-charcoal">Gift Box Ready</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Floating Glass Accent Pills */}
-                <div className="absolute -top-4 -right-2 glass-badge px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2 animate-bounce" style={{ animationDuration: '4s' }}>
-                  <span className="text-lg">✨</span>
-                  <span className="text-xs font-bold text-charcoal">Artisan Crafted</span>
+                <div className="absolute -top-4 -right-2 glass-badge px-3.5 py-1.5 rounded-2xl shadow-lg flex items-center gap-2 animate-bounce" style={{ animationDuration: '4s' }}>
+                  <span className="text-base">✨</span>
+                  <span className="text-xs font-bold text-charcoal">100% Artisan Crafted</span>
                 </div>
 
-                <div className="absolute -bottom-4 -left-2 glass-badge px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
-                  <span className="text-lg">💎</span>
-                  <span className="text-xs font-bold text-charcoal">Premium Quality</span>
+                <div className="absolute -bottom-4 -left-2 glass-badge px-3.5 py-1.5 rounded-2xl shadow-lg flex items-center gap-2">
+                  <span className="text-base">💎</span>
+                  <span className="text-xs font-bold text-charcoal">Premium Quality Resin</span>
                 </div>
               </div>
             </div>
