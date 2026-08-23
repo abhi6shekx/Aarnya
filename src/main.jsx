@@ -14,7 +14,6 @@ import Admin from './pages/Admin'
 import Profile from './pages/Profile'
 import Addresses from './pages/adresses'
 import Orders from './pages/Orders'
-import VirtualTryOn from './components/VirtualTryOn'
 import Wishlist from './pages/Wishlist'
 
 const router = createBrowserRouter([
@@ -25,7 +24,6 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: "products", element: <Products /> },
       { path: "product/:id", element: <ProductDetail /> },
-      { path: "virtual-try-on/:productId", element: <VirtualTryOn /> },
       { path: "cart", element: <Cart /> },
       { path: "wishlist", element: <Wishlist /> },
       { path: "checkout", element: <Checkout /> },

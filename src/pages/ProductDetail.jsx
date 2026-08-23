@@ -178,13 +178,6 @@ export default function ProductDetail() {
                 Add to Cart
               </button>
 
-              <button
-                onClick={() => navigate(`/virtual-try-on/${p.id}`)}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-full text-sm transition-all shadow-sm flex items-center justify-center gap-2"
-              >
-                📸 Try On with Camera (Virtual Try-On)
-              </button>
-
               {p.customizable && (
                 <a
                   href={`https://wa.me/${whatsappNumber}?text=Hello Aarnya, I want customization for ${p.name}`}

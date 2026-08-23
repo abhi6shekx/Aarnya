@@ -63,12 +63,6 @@ export default function ProductCard({ p }) {
     navigate('/cart')
   }
 
-  const startVirtualTryOn = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    navigate(`/virtual-try-on/${p.id}`)
-  }
-
   return (
     <div className="bg-white rounded-3xl p-3.5 border border-blush-100/80 shadow-card hover:shadow-card-hover transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between group relative">
       
@@ -140,15 +134,6 @@ export default function ProductCard({ p }) {
               </span>
             )}
           </div>
-
-          {/* Virtual Try-On Badge */}
-          {p.virtualTryOnEnabled && (
-            <div className="absolute bottom-2.5 left-2.5 z-10">
-              <span className="bg-emerald-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-sm">
-                📸 Try On
-              </span>
-            </div>
-          )}
         </div>
         
         {/* Details Content */}
@@ -197,21 +182,6 @@ export default function ProductCard({ p }) {
           >
             Out of Stock
           </button>
-        ) : p.virtualTryOnEnabled ? (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={startVirtualTryOn}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-xl text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-1"
-            >
-              📸 Try On
-            </button>
-            <button
-              onClick={addToCart}
-              className="btn-primary text-xs font-semibold py-2 px-3 rounded-xl"
-            >
-              Add to Cart
-            </button>
-          </div>
         ) : (
           <button
             onClick={addToCart}

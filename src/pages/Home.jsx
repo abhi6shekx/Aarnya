@@ -150,15 +150,6 @@ export default function Home() {
                       onError={() => { if (heroSrc !== '/logo.svg') setHeroSrc('/logo.svg') }}
                     />
                     
-                    {/* Live Virtual Try-On Overlay Badge */}
-                    <Link
-                      to={featuredProducts?.[0] ? `/virtual-try-on/${featuredProducts[0].id}` : '/virtual-try-on/sample'}
-                      className="absolute top-3 left-3 bg-emerald-600/90 hover:bg-emerald-700 text-white backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md transition-all hover:scale-105"
-                    >
-                      <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                      📸 Try-On Live AR
-                    </Link>
-
                     {/* Top Right Rating Badge */}
                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-amber-900 border border-amber-200 shadow-sm flex items-center gap-1">
                       <span className="text-amber-500">★</span> 4.9 (120+)
@@ -171,7 +162,7 @@ export default function Home() {
                           {featuredProducts?.[0]?.name || 'Signature Handmade Collection'}
                         </p>
                         <p className="text-[11px] text-rose-500 font-semibold">
-                          {featuredProducts?.[0]?.price ? `₹${featuredProducts[0].price} • Pure Craftsmanship` : 'Available for Instant Try-On'}
+                          {featuredProducts?.[0]?.price ? `₹${featuredProducts[0].price} • Pure Craftsmanship` : 'Handcrafted Jewelry'}
                         </p>
                       </div>
                       <Link
