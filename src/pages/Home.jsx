@@ -4,7 +4,6 @@ import { collection, getDocs, limit, query, where } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import ProductCard from '../components/ProductCard'
 import PromoBanner from '../components/PromoBanner'
-import HeroCheersShowcase from '../components/HeroCheersShowcase'
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([])
@@ -176,63 +175,47 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Hero Showcase Product with Cheers Animation */}
+            {/* Right Hero Showcase Product */}
             <div className="lg:col-span-5 flex justify-center">
-              <HeroCheersShowcase products={featuredProducts} fallbackSrc={heroSrc} />
+              <div className="w-full max-w-sm bg-white rounded-2xl p-4 border border-blush-100 shadow-luxury space-y-4">
+                <div className="aspect-square rounded-xl overflow-hidden bg-ivory relative group flex items-center justify-center">
+                  <img
+                    src={featuredProducts?.[0]?.images?.[0]?.url || featuredProducts?.[0]?.images?.[0] || featuredProducts?.[0]?.imageUrl || heroSrc}
+                    alt="Aarnya Highlight"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={() => { if (heroSrc !== '/logo.svg') setHeroSrc('/logo.svg') }}
+                  />
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-bold text-rose-600 border border-rose-100 shadow-xs">
+                    🔥 Featured Drop
+                  </div>
+                  <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-bold text-amber-900 border border-amber-200 shadow-xs flex items-center gap-1">
+                    <span className="text-amber-500">★</span> 4.9
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display font-bold text-base text-charcoal truncate">
+                      {featuredProducts?.[0]?.name || 'Signature Handmade Collection'}
+                    </h3>
+                    <span className="font-bold text-sm text-charcoal">
+                      {featuredProducts?.[0]?.price ? `₹${featuredProducts[0].price}` : 'Handcrafted'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 line-clamp-1 font-light">
+                    {featuredProducts?.[0]?.shortDesc || 'Ultra-lightweight resin with authentic botanicals.'}
+                  </p>
+                  <Link
+                    to={featuredProducts?.[0] ? `/product/${featuredProducts[0].id}` : '/products'}
+                    className="w-full block text-center py-2.5 bg-charcoal hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                  >
+                    View Piece →
+                  </Link>
+                </div>
+              </div>
             </div>
 
           </div>
-        </div>
-      </section>
-
-      {/* 3. Shop by Budget / Occasion Badges */}
-      <section className="container-base px-4 sm:px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <Link
-            to="/products?type=rings"
-            className="bg-white p-4 rounded-2xl border border-blush-100 shadow-xs hover:shadow-md transition-all flex items-center gap-3 group"
-          >
-            <span className="text-2xl p-2 rounded-xl bg-rose-50 text-rose-600 group-hover:scale-110 transition-transform">💍</span>
-            <div>
-              <p className="text-xs font-bold text-charcoal group-hover:text-rose-600 transition-colors">Everyday Rings</p>
-              <p className="text-[11px] text-gray-500">Floral & Bands</p>
-            </div>
-          </Link>
-
-          <Link
-            to="/products?type=earrings"
-            className="bg-white p-4 rounded-2xl border border-blush-100 shadow-xs hover:shadow-md transition-all flex items-center gap-3 group"
-          >
-            <span className="text-2xl p-2 rounded-xl bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform">💎</span>
-            <div>
-              <p className="text-xs font-bold text-charcoal group-hover:text-rose-600 transition-colors">Statement Studs</p>
-              <p className="text-[11px] text-gray-500">Lightweight Drop</p>
-            </div>
-          </Link>
-
-          <Link
-            to="/products?gender=women"
-            className="bg-white p-4 rounded-2xl border border-blush-100 shadow-xs hover:shadow-md transition-all flex items-center gap-3 group"
-          >
-            <span className="text-2xl p-2 rounded-xl bg-purple-50 text-purple-600 group-hover:scale-110 transition-transform">🎁</span>
-            <div>
-              <p className="text-xs font-bold text-charcoal group-hover:text-rose-600 transition-colors">Gift Sets</p>
-              <p className="text-[11px] text-gray-500">Ready in Velvet Box</p>
-            </div>
-          </Link>
-
-          <a
-            href={whatsappLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-xs hover:shadow-md transition-all flex items-center gap-3 group"
-          >
-            <span className="text-2xl p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform">🌸</span>
-            <div>
-              <p className="text-xs font-bold text-charcoal group-hover:text-emerald-600 transition-colors">Wedding Preserves</p>
-              <p className="text-[11px] text-emerald-700">Custom Flower Art</p>
-            </div>
-          </a>
         </div>
       </section>
 
